@@ -5,7 +5,7 @@
 <meta name="color-scheme" content="light">
 <title>해파리 피하기 · B02 젤리피쉬</title>
 <meta name="description" content="수온이 오를수록 해파리가 늘어납니다. 관측 부표를 모으고 살아남으세요 — 제9회 Ocean ICT Festival B02 젤리피쉬">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; font-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; font-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'; frame-src 'none'">
 <meta name="referrer" content="no-referrer">
 
 <style>
@@ -233,6 +233,18 @@ h1 .l2{display:block;color:var(--accent)}
   font-size:clamp(62px,20vw,80px);line-height:.86;letter-spacing:-.01em;
   -webkit-text-stroke:.035em currentColor;paint-order:fill stroke}
 .vote-team{font-family:var(--font-title);font-size:23px}
+/* 노란 쪽지 안에서 유일하게 눌리는 것 — 잉크로 꽉 채워 대비를 최대로 */
+.vote-go{
+  display:block;margin-top:var(--s-4);padding:16px 20px;
+  font-family:var(--font-title);font-size:18px;text-align:center;text-decoration:none;
+  color:var(--signal);background:var(--signal-ink);
+  border:1px solid transparent;border-image-source:var(--hand-border);
+  border-image-slice:8;border-image-width:8px;border-image-repeat:round;
+  transition:opacity .15s ease,transform 90ms ease;
+}
+.vote-go:active{transform:translateY(1px)}
+.vote-go:hover{opacity:.88}
+.vote-go:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
 .vote-sub{margin:var(--s-4) 0 0;padding-top:var(--s-3);
   border-top:1.5px dashed rgba(23,23,17,.3);font-size:11.5px;line-height:1.5;opacity:.82}
 .credit{margin-top:var(--s-4);font-size:10.5px;color:var(--ink-3);line-height:1.7}
@@ -251,6 +263,7 @@ h1 .l2{display:block;color:var(--accent)}
   .vote{margin-top:var(--s-4);padding:var(--s-4)} .vote-no{font-size:clamp(50px,16vw,62px)}
   .vote-ask{font-size:14px} .vote-team{font-size:19px}
   .btn-secondary{padding:12px;font-size:15.5px}
+  .vote-go{margin-top:var(--s-3);padding:13px 16px;font-size:16px}
 }
 </style>
 
@@ -298,6 +311,7 @@ h1 .l2{display:block;color:var(--accent)}
         <span class="vote-no num">B02</span>
         <span class="vote-team">젤리피쉬</span>
       </div>
+      <a class="vote-go" id="voteBtn" href="https://forms.cloud.microsoft/pages/responsepage.aspx?id=xGtoLwL_d02Tsdkl-uFK88C2c-onAbNIn7jORWmzgQFUOFpWQ01ORDE1UDhDTjI2UzdaS1RHVDNPSy4u&amp;origin=QRCode&amp;route=shorturl" target="_blank" rel="noopener noreferrer">투표하러 가기</a>
       <p class="vote-sub">해양열파로 동해안 해파리<br>대량 발생 위험을 예측 · 부산과학고</p>
     </div>
 
