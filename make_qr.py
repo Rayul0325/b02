@@ -12,10 +12,15 @@
 import io
 import os
 
+import re
+
 import segno
 
 URL = "https://rayul0325.github.io/b02/"
 HERE = os.path.dirname(os.path.abspath(__file__))
+
+FONTS = re.search(r'(@font-face\{font-family:"Gaegu".*?format\("woff2"\)\}\s*@font-face\{font-family:"Jua".*?format\("woff2"\)\})',
+                  io.open(os.path.join(HERE, "index.html"), encoding="utf-8").read(), re.S).group(1)
 
 qr = segno.make(URL, error="h")
 
@@ -35,60 +40,52 @@ DARK = """<!doctype html>
 <meta charset="utf-8">
 <title>부스 B02 · QR 인쇄물</title>
 <style>
-  /* 게임 화면과 같은 팔레트를 쓴다. 부스에서 종이와 화면이 따로 놀면
-     같은 팀 물건으로 안 보인다. */
+  /* 게임과 같은 정체성 — memgineering 「종이와 실」. 종이 위에 손으로 쓴 것처럼. */
   @page { size: A4 portrait; margin: 0; }
   *{ box-sizing:border-box; margin:0; padding:0 }
+  __FONTS__
   :root{
-    --paper:#071A26; --paper-2:#0E3247;
-    --ink:#F4F9FC; --ink-2:#9FB8C6; --ink-3:#6E8A9B;
-    --rule:rgba(159,184,198,.28);
-    --accent:#F2B33C; --signal:#DE4331;
-    --font-body:-apple-system,BlinkMacSystemFont,"Pretendard",
-                "Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
-    --font-num:ui-monospace,"SF Mono",SFMono-Regular,"Roboto Mono",monospace;
+    --paper:#f6f9fd; --surface:#ffffff;
+    --ink:#101828; --ink-2:#667085; --ink-3:#5f6d80; --ink-ghost:#b9c4d6;
+    --accent:#1769ff; --accent-press:#0b56e8; --signal:#ffd84a; --signal-ink:#171711;
+    --font-display:"Gaegu",sans-serif; --font-title:"Jua",sans-serif;
+    --font-body:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo",sans-serif;
   }
-  body{ font:400 16px/1.6 var(--font-body); -webkit-font-smoothing:antialiased;
-        background:#DDE4E9; }
+  body{ font:400 16px/1.6 var(--font-body); -webkit-font-smoothing:antialiased; background:#e7ecef }
   .sheet{
-    width:210mm; height:297mm; margin:0 auto; background:var(--paper);
-    color:var(--ink); display:flex; flex-direction:column;
-    padding:20mm 18mm 14mm;
+    width:210mm; height:297mm; margin:0 auto; background:var(--paper); color:var(--ink);
+    display:flex; flex-direction:column; padding:20mm 18mm 14mm; position:relative;
   }
-  .head{ display:flex; align-items:baseline; gap:5mm }
-  .chip{ font-family:var(--font-num); font-size:19pt; font-weight:700; letter-spacing:.02em;
-         background:var(--accent); color:var(--paper); padding:2.5mm 5mm; border-radius:1mm }
-  .who{ font-size:15pt; font-weight:700; color:var(--ink-2) }
+  .head{ display:flex; align-items:center; gap:5mm }
+  .chip{ font-family:var(--font-title); font-size:20pt; background:var(--signal);
+         color:var(--signal-ink); padding:2.5mm 6mm; transform:rotate(-1.4deg) }
+  .who{ font-family:var(--font-title); font-size:16pt; color:var(--ink-2) }
 
-  h1{ margin:14mm 0 0; font-size:64pt; font-weight:800; letter-spacing:-.045em;
-      line-height:.9 }
-  h1 span{ display:block; color:var(--ink-2) }
-  .lede{ margin:7mm 0 0; font-size:16pt; font-weight:500; color:var(--ink-2);
-         max-width:100mm; line-height:1.45 }
+  h1{ margin:12mm 0 0; font-family:var(--font-display); font-weight:700; font-size:78pt;
+      line-height:.9; -webkit-text-stroke:.022em currentColor; paint-order:fill stroke }
+  h1 span{ display:block; color:var(--accent) }
+  .lede{ margin:8mm 0 0; font-size:16pt; color:var(--ink-2); line-height:1.5 }
 
   .mid{ margin-top:auto; display:flex; align-items:center; gap:12mm }
-  .qrbox{ flex:none; padding:5mm; background:#fff; border-radius:2mm }
+  .qrbox{ flex:none; padding:5mm; background:var(--surface); border:.7mm solid var(--ink);
+          transform:rotate(-.8deg); box-shadow:2mm 3mm 6mm -2mm rgba(18,22,41,.2) }
   .qrbox svg{ display:block; width:62mm; height:62mm }
-  .cta{ min-width:0 }
-  .cta b{ display:block; font-size:26pt; font-weight:800; letter-spacing:-.03em;
-          color:var(--accent); line-height:1.1 }
-  .cta p{ margin-top:4mm; font-size:13pt; font-weight:500; color:var(--ink-2);
-          line-height:1.5 }
-  .cta .url{ margin-top:5mm; font-family:var(--font-num); font-size:10.5pt;
-             color:var(--ink-3); word-break:break-all }
+  .cta b{ display:block; font-family:var(--font-display); font-weight:700; font-size:30pt;
+          color:var(--accent-press); line-height:1.08;
+          -webkit-text-stroke:.022em currentColor; paint-order:fill stroke }
+  .cta p{ margin-top:5mm; font-size:13pt; color:var(--ink-2); line-height:1.5 }
+  .cta .url{ margin-top:5mm; font-family:var(--font-title); font-size:11pt; color:var(--ink-3) }
 
-  .foot{ margin-top:auto; padding-top:6mm; border-top:1px solid var(--rule);
+  .foot{ margin-top:auto; padding-top:6mm; border-top:.5mm dashed var(--ink-ghost);
          display:flex; justify-content:space-between; align-items:flex-end; gap:8mm }
-  .foot .subject{ font-size:12pt; font-weight:600; color:var(--ink-2); line-height:1.5 }
+  .foot .subject{ font-family:var(--font-title); font-size:13pt; color:var(--ink-2); line-height:1.5 }
   .foot .team{ font-size:9.5pt; color:var(--ink-3); text-align:right; line-height:1.6 }
   @media print{ body{ background:var(--paper) } .sheet{ margin:0 } }
 </style>
 <div class="sheet">
   <div class="head"><span class="chip">B02</span><span class="who">젤리피쉬</span></div>
-
   <h1>해파리<span>피하기</span></h1>
-  <p class="lede">동해 수온이 오를수록 해파리가 늘어납니다. 얼마나 버틸 수 있습니까.</p>
-
+  <p class="lede">수온이 오를수록 해파리가 늘어납니다.<br>얼마나 버틸 수 있습니까.</p>
   <div class="mid">
     <div class="qrbox">__SVG__</div>
     <div class="cta">
@@ -97,7 +94,6 @@ DARK = """<!doctype html>
       <p class="url">rayul0325.github.io/b02</p>
     </div>
   </div>
-
   <div class="foot">
     <p class="subject">해양열파로 동해안 해파리<br>대량 발생 위험을 예측</p>
     <p class="team">제9회 Ocean ICT Festival<br>김민아 · 강태영 · 장도건 · 황은성</p>
@@ -105,29 +101,12 @@ DARK = """<!doctype html>
 </div>
 """
 
-# 밝은 판 — 학교 레이저 프린터에서 안전하다(전면 진한 배경은 토너를 많이
-# 먹고 얼룩진다). 색만 뒤집고 배치는 그대로 둔다.
-LIGHT = (DARK
-         .replace("--paper:#071A26;", "--paper:#FFFFFF;")
-         .replace("--paper-2:#0E3247;", "--paper-2:#F1F5F8;")
-         .replace("--ink:#F4F9FC;", "--ink:#071A26;")
-         .replace("--ink-2:#9FB8C6;", "--ink-2:#40606F;")
-         .replace("--ink-3:#6E8A9B;", "--ink-3:#7C939F;")
-         .replace("--rule:rgba(159,184,198,.28);", "--rule:rgba(7,26,38,.16);")
-         .replace("background:#DDE4E9;", "background:#E7ECEF;")
-         .replace("--accent:#F2B33C;", "--accent:#B4791A;")   # 흰 바탕에서 노랑은 안 읽힌다
-         .replace('.qrbox{ flex:none; padding:5mm; background:#fff; border-radius:2mm }',
-                  '.qrbox{ flex:none; padding:5mm; background:#fff; border:.6mm solid var(--ink); border-radius:2mm }'))
-
-for name, doc in (("qr_print.html", LIGHT), ("qr_print_dark.html", DARK)):
-    path = os.path.join(HERE, name)
-    with io.open(path, "w", encoding="utf-8") as fh:
-        fh.write(doc.replace("__SVG__", svg))
-    print("%-22s %s" % (name, path))
+path = os.path.join(HERE, "qr_print.html")
+with io.open(path, "w", encoding="utf-8") as fh:
+    fh.write(DARK.replace("__SVG__", svg))
+print("A4 인쇄물:", path)
 
 print("주소     :", URL)
 print("QR 격자  : %d x %d" % qr.symbol_size(scale=1, border=0))
 print("낱장 PNG :", png_path)
 print()
-print("qr_print.html      = 흰 바탕 (학교 프린터 권장)")
-print("qr_print_dark.html = 진한 바탕 (게임 화면과 같은 색 · 토너 많이 먹음)")
