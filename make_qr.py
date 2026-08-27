@@ -78,7 +78,7 @@ html = """<!doctype html>
   <div class="qrbox">__SVG__</div>
 
   <p class="cta">폰 카메라로 찍으세요
-    <small>30초 버틸 수 있나요? · 설치 없이 바로 열립니다</small></p>
+    <small>관측 부표를 모으고 살아남으세요 · 설치 없이 바로 열립니다</small></p>
 
   <div class="rule"></div>
   <div class="team">젤리피쉬</div>
