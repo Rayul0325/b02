@@ -74,6 +74,11 @@ DARK = """<!doctype html>
           color:var(--accent-press); line-height:1.08;
           -webkit-text-stroke:.022em currentColor; paint-order:fill stroke }
   .cta p{ margin-top:5mm; font-size:13pt; color:var(--ink-2); line-height:1.5 }
+  .cta .gift{ margin-top:6mm; padding:4mm 6mm; display:block; max-width:82mm;
+              background:var(--signal); color:var(--signal-ink);
+              font-family:var(--font-title); font-size:14pt; line-height:1.4;
+              transform:rotate(-1.2deg) }
+  .cta .gift b{ font-weight:400; box-shadow:inset 0 -.42em 0 rgba(23,23,17,.16) }
   .cta .url{ margin-top:5mm; font-family:var(--font-title); font-size:11pt; color:var(--ink-3) }
 
   .foot{ margin-top:auto; padding-top:6mm; border-top:.5mm dashed var(--ink-ghost);
@@ -91,6 +96,7 @@ DARK = """<!doctype html>
     <div class="cta">
       <b>폰 카메라로<br>찍으세요</b>
       <p>설치 없이 바로 열립니다.<br>관측 부표를 모으고 살아남으세요.</p>
+      <p class="gift">투표하고 <b>B02</b>로 오시면 <b>젤리</b> 드려요</p>
       <p class="url">rayul0325.github.io/b02</p>
     </div>
   </div>
@@ -101,9 +107,15 @@ DARK = """<!doctype html>
 </div>
 """
 
+# 자리표시가 하나라도 남으면 CSS 파서가 그 줄을 선택자로 읽어 :root 를 통째로
+# 날린다(실측: 색·서체가 전부 기본값이 됐다). 남았는지 확인하고 쓴다.
+doc = DARK.replace("__FONTS__", FONTS).replace("__SVG__", svg)
+for token in ("__FONTS__", "__SVG__"):
+    assert token not in doc, "치환 안 된 자리표시가 남았다: %s" % token
+
 path = os.path.join(HERE, "qr_print.html")
 with io.open(path, "w", encoding="utf-8") as fh:
-    fh.write(DARK.replace("__SVG__", svg))
+    fh.write(doc)
 print("A4 인쇄물:", path)
 
 print("주소     :", URL)

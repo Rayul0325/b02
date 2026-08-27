@@ -233,9 +233,19 @@ h1 .l2{display:block;color:var(--accent)}
   font-size:clamp(62px,20vw,80px);line-height:.86;letter-spacing:-.01em;
   -webkit-text-stroke:.035em currentColor;paint-order:fill stroke}
 .vote-team{font-family:var(--font-title);font-size:23px}
+/* 미끼. 팀 이름이 젤리피쉬라 젤리를 주는 게 농담이 된다. */
+.vote-gift{
+  margin:var(--s-4) 0 0;padding-top:var(--s-3);
+  border-top:1.5px dashed rgba(23,23,17,.3);
+  font-family:var(--font-title);font-size:15.5px;line-height:1.4;
+  color:rgba(23,23,17,.82);
+}
+.vote-gift b{color:var(--signal-ink);font-weight:400;
+  box-shadow:inset 0 -.42em 0 rgba(23,23,17,.14)}
+
 /* 노란 쪽지 안에서 유일하게 눌리는 것 — 잉크로 꽉 채워 대비를 최대로 */
 .vote-go{
-  display:block;margin-top:var(--s-4);padding:16px 20px;
+  display:block;margin-top:var(--s-3);padding:16px 20px;
   font-family:var(--font-title);font-size:18px;text-align:center;text-decoration:none;
   color:var(--signal);background:var(--signal-ink);
   border:1px solid transparent;border-image-source:var(--hand-border);
@@ -263,7 +273,8 @@ h1 .l2{display:block;color:var(--accent)}
   .vote{margin-top:var(--s-4);padding:var(--s-4)} .vote-no{font-size:clamp(50px,16vw,62px)}
   .vote-ask{font-size:14px} .vote-team{font-size:19px}
   .btn-secondary{padding:12px;font-size:15.5px}
-  .vote-go{margin-top:var(--s-3);padding:13px 16px;font-size:16px}
+  .vote-go{margin-top:var(--s-2);padding:13px 16px;font-size:16px}
+  .vote-gift{margin-top:var(--s-3);padding-top:var(--s-2);font-size:14px}
 }
 </style>
 
@@ -311,6 +322,7 @@ h1 .l2{display:block;color:var(--accent)}
         <span class="vote-no num">B02</span>
         <span class="vote-team">젤리피쉬</span>
       </div>
+      <p class="vote-gift">투표하고 <b>B02</b>로 오시면 <b>젤리</b> 드려요</p>
       <a class="vote-go" id="voteBtn" href="https://forms.cloud.microsoft/pages/responsepage.aspx?id=xGtoLwL_d02Tsdkl-uFK88C2c-onAbNIn7jORWmzgQFUOFpWQ01ORDE1UDhDTjI2UzdaS1RHVDNPSy4u&amp;origin=QRCode&amp;route=shorturl" target="_blank" rel="noopener noreferrer">투표하러 가기</a>
       <p class="vote-sub">해양열파로 동해안 해파리<br>대량 발생 위험을 예측 · 부산과학고</p>
     </div>
