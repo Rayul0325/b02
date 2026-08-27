@@ -300,8 +300,14 @@ let lowSpec = false;
 
 const fish = { x:0, y:0, tx:0, ty:0, vx:0, vy:0 };
 
-function heat(){                                    // 난이도 0~1
+function heat(){                                    // 난이도 0~1 (마릿수·색)
   return Math.min(Math.max((temp - CFG.START_TEMP) / CFG.TEMP_SPAN, 0), 1);
+}
+/* 수온은 28℃에서 멈춘다(동해 여름 표층의 현실적인 상한). 그 뒤에도 게임이
+   평평해지면 고수가 무한정 버텨 부스 줄이 밀린다. 그래서 상한에 닿은 뒤에는
+   마릿수 대신 '떨어지는 빠르기'가 계속 조여든다. */
+function press(){
+  return Math.min(CFG.TEMP_RATE * t / CFG.TEMP_SPAN, 2.2);
 }
 function targetCount(){
   const n = CFG.BASE_JELLY + CFG.SPAWN_GAIN * heat();
@@ -324,14 +330,13 @@ cv.addEventListener('touchmove',  aim, { passive:false });
 
 // ── 해파리 ────────────────────────────────────────────────────
 function spawnJelly(){
-  const h = heat();
   const r = 15 + Math.random() * 12;
   jellies.push({
     bx : 30 + Math.random() * (W - 60),          // 흔들림의 중심
     y  : -r * 2 - Math.random() * H * 0.5,
     r  : r,
     // 떨어지는 빠르기도 수온을 탄다 (화면 높이 기준 비율)
-    sp : (0.20 + 0.25 * h) * H * (0.85 + Math.random() * 0.35),
+    sp : (0.20 + 0.25 * press()) * H * (0.85 + Math.random() * 0.35),
     amp: 14 + Math.random() * 30,                // 좌우로 흔들리는 폭
     fq : 0.5 + Math.random() * 0.9,
     ph : Math.random() * Math.PI * 2,
@@ -488,7 +493,8 @@ function hit(){
 function step(dt){
   if (mode === 'play'){
     t    += dt;
-    temp  = CFG.START_TEMP + CFG.TEMP_RATE * t;
+    temp  = Math.min(CFG.START_TEMP + CFG.TEMP_RATE * t,
+                     CFG.START_TEMP + CFG.TEMP_SPAN);   // 28.0℃ 에서 멈춘다
 
     while (jellies.length < targetCount()) spawnJelly();
 
@@ -521,7 +527,8 @@ function draw(dt){
   }
   drawBackground(dt);
   for (const j of jellies) drawJelly(j);
-  if (mode !== 'over') drawFish();
+  // 시작 화면에서는 물고기를 그리지 않는다 — 반투명 덮개 너머로 새어 보인다
+  if (mode === 'play' || mode === 'dying') drawFish();
   ctx.restore();
 
   if (flash > 0){
