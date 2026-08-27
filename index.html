@@ -1,6 +1,645 @@
-<!doctype html><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#06243B">
 <title>해파리 피하기 · B02 젤리피쉬</title>
-<style>body{margin:0;display:grid;place-items:center;min-height:100vh;
-background:#0B3B5C;color:#fff;font:16px/1.6 -apple-system,"Pretendard","Apple SD Gothic Neo",sans-serif;text-align:center}</style>
-<div><h1>해파리 피하기</h1><p>B02 · 젤리피쉬</p><p>준비 중입니다</p></div>
+<meta name="description" content="수온이 오를수록 해파리가 늘어납니다. 30초 버틸 수 있나요? — 제9회 Ocean ICT Festival B02 젤리피쉬">
+
+<style>
+/* 색·모서리·글꼴은 우리 팀의 다른 네 화면(src/design.py)과 같은 값을 쓴다.
+   한 팀 작품으로 보여야 하기 때문이다. 바닷속 화면만 어두운 쪽을 따로 둔다. */
+:root{
+  --ink:#191F28; --ink2:#4E5968; --mut:#8B95A1;
+  --panel:#FFFFFF; --soft:#F2F4F6; --line:#E5E8EB;
+  --accent:#3182F6; --accent-bg:#EFF6FF;
+  --warm:#F04452;  --warm-bg:#FEF0F1;
+  --ok:#15C39A;    --acc:#FF9500;
+  --sea-top:#8FD4EA; --sea-bot:#06243B;
+  --r:16px; --r-sm:10px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html,body{height:100%; margin:0; overflow:hidden}
+body{
+  background:var(--sea-bot); color:#fff;
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,"Pretendard","Pretendard Variable",
+       "Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  -webkit-font-smoothing:antialiased;
+  user-select:none; -webkit-user-select:none;
+  touch-action:none; overscroll-behavior:none;
+}
+canvas{display:block; position:fixed; inset:0; width:100%; height:100%}
+
+/* 화면 세 장이 캔버스 위에 겹쳐 뜬다 */
+.scr{
+  position:fixed; inset:0; z-index:2;
+  display:none; flex-direction:column;
+  padding:max(20px,env(safe-area-inset-top)) 20px max(20px,env(safe-area-inset-bottom));
+  overflow-y:auto; overscroll-behavior:contain;
+}
+.scr.on{display:flex}
+.scr::-webkit-scrollbar{display:none}
+
+/* ── 시작 화면 ─────────────────────────────────────── */
+#start{
+  justify-content:center; align-items:center; text-align:center;
+  background:radial-gradient(120% 80% at 50% 30%, rgba(9,44,72,.55), rgba(4,22,38,.92));
+  backdrop-filter:blur(2px);
+}
+.badge{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:6px 14px; border-radius:999px;
+  background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22);
+  font-size:13px; font-weight:700; letter-spacing:.02em;
+}
+.badge b{color:#8FD4EA}
+h1{
+  margin:20px 0 0; font-size:40px; font-weight:800;
+  letter-spacing:-.035em; line-height:1.15;
+}
+.tagline{margin:14px 0 0; font-size:17px; color:#C6DEEC; font-weight:500}
+.howto{
+  margin:28px 0 0; padding:16px 18px; max-width:340px;
+  background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14);
+  border-radius:var(--r); font-size:14.5px; line-height:1.65; color:#DCEAF3;
+}
+.howto b{color:#fff}
+
+/* 버튼 — 다른 화면들과 같은 파랑, 같은 모서리 */
+.btn{
+  -webkit-appearance:none; appearance:none; border:0; cursor:pointer;
+  font-family:inherit; font-weight:700; letter-spacing:-.01em;
+  border-radius:14px; transition:transform .08s ease, filter .15s ease;
+}
+.btn:active{transform:scale(.97)}
+.btn-go{
+  margin-top:30px; width:100%; max-width:340px;
+  padding:19px 24px; font-size:19px;
+  background:var(--accent); color:#fff;
+  box-shadow:0 8px 24px rgba(49,130,246,.4);
+}
+.foot{margin-top:24px; font-size:12.5px; color:#7FA3B8; line-height:1.7}
+
+/* ── 게임 HUD ──────────────────────────────────────── */
+#hud{
+  position:fixed; z-index:2; left:0; right:0;
+  top:max(12px,env(safe-area-inset-top));
+  display:none; justify-content:space-between; align-items:center;
+  padding:0 16px; pointer-events:none;
+}
+#hud.on{display:flex}
+.pill{
+  display:flex; align-items:center; gap:7px;
+  padding:8px 14px; border-radius:999px;
+  background:rgba(4,22,38,.55); border:1px solid rgba(255,255,255,.16);
+  backdrop-filter:blur(8px);
+  font-size:15px; font-weight:700;
+  font-variant-numeric:tabular-nums; font-feature-settings:"tnum";
+}
+#tempDot{width:9px; height:9px; border-radius:50%; background:var(--accent);
+  transition:background .3s linear}
+#tempVal{min-width:52px}
+#timeVal{min-width:46px; text-align:right}
+
+/* ── 결과 화면 ─────────────────────────────────────── */
+#over{
+  justify-content:flex-start; align-items:center;
+  background:linear-gradient(180deg, rgba(4,22,38,.72), rgba(4,22,38,.95));
+  backdrop-filter:blur(3px);
+}
+.sheet{
+  width:100%; max-width:380px; margin:auto 0;
+  display:flex; flex-direction:column; align-items:stretch;
+}
+.record{padding:12px 0 4px; text-align:center}
+.score{
+  font-size:64px; font-weight:800; line-height:1;
+  letter-spacing:-.045em; color:#fff;
+  font-variant-numeric:tabular-nums; font-feature-settings:"tnum";
+}
+.score span{font-size:28px; font-weight:700; margin-left:2px; color:#9FC6DA}
+.caught{margin-top:12px; font-size:15px; color:#B9D5E4}
+.caught b{color:#FF9DA6; font-weight:700}
+.best{
+  margin-top:14px; display:inline-flex; align-items:center; gap:7px;
+  padding:6px 14px; border-radius:999px;
+  background:rgba(255,255,255,.1); font-size:13px; color:#CFE3EE; font-weight:600;
+}
+.best.new{background:rgba(255,149,0,.2); color:#FFD08A}
+
+/* 알고 가세요 — 매 판 우리 실측 숫자 하나 */
+.fact{
+  margin-top:22px; padding:17px 18px;
+  background:var(--panel); color:var(--ink);
+  border-radius:var(--r);
+  box-shadow:0 8px 28px rgba(0,0,0,.28);
+}
+.fact-h{
+  display:flex; align-items:center; gap:7px;
+  font-size:12px; font-weight:800; letter-spacing:.04em;
+  color:var(--accent); margin-bottom:9px;
+}
+.fact-h::before{content:""; width:6px; height:6px; border-radius:50%; background:var(--accent)}
+.fact-b{font-size:14.5px; line-height:1.68; color:var(--ink2); font-weight:500}
+.fact-b b{color:var(--ink); font-weight:800}
+.fact-b em{font-style:normal; color:var(--warm); font-weight:800}
+
+.btn-again{
+  margin-top:20px; width:100%; padding:18px;
+  font-size:18px; background:var(--accent); color:#fff;
+  box-shadow:0 8px 24px rgba(49,130,246,.38);
+}
+
+/* 투표 유도 — 여기가 이 게임을 만든 이유다 */
+.vote{
+  margin-top:26px; padding:22px 18px 20px;
+  border-radius:var(--r); text-align:center;
+  background:linear-gradient(165deg,#FFF4E0,#FFE7C4);
+  color:#3A2A12;
+  box-shadow:0 8px 28px rgba(0,0,0,.26);
+}
+.vote-lead{font-size:14px; font-weight:700; color:#8A6320}
+.booth{
+  margin:12px 0 6px; font-size:54px; font-weight:800; line-height:1;
+  letter-spacing:.01em; color:#C2410C;
+  font-variant-numeric:tabular-nums;
+}
+.team{font-size:21px; font-weight:800; color:#7C3A0B; letter-spacing:-.02em}
+.subject{
+  margin-top:11px; padding-top:11px; border-top:1px solid rgba(122,58,11,.2);
+  font-size:13px; line-height:1.6; color:#7A5A2A; font-weight:600;
+}
+.credit{margin-top:22px; font-size:11.5px; color:#6E90A6; text-align:center; line-height:1.7}
+</style>
+
+<canvas id="cv"></canvas>
+
+<!-- 게임 중 상단 표시 -->
+<div id="hud">
+  <div class="pill"><i id="tempDot"></i><span id="tempVal">21.0℃</span></div>
+  <div class="pill"><span id="timeVal">0.0초</span></div>
+</div>
+
+<!-- 1. 시작 -->
+<div class="scr on" id="start">
+  <div class="badge">부스 <b>B02</b> · 젤리피쉬</div>
+  <h1>해파리 피하기</h1>
+  <p class="tagline">수온이 오를수록 해파리가 늘어납니다</p>
+  <div class="howto">
+    화면을 <b>손가락으로 누른 채 움직이면</b> 물고기가 따라옵니다.<br>
+    해파리에 닿으면 끝. <b>30초</b> 버틸 수 있나요?
+  </div>
+  <button class="btn btn-go" id="goBtn">시작하기</button>
+  <p class="foot">제9회 Ocean ICT Festival<br>해양열파로 동해안 해파리 대량 발생 위험을 예측</p>
+</div>
+
+<!-- 3. 결과 -->
+<div class="scr" id="over">
+  <div class="sheet">
+    <div class="record">
+      <div class="score" id="scoreVal">0.0<span>초</span></div>
+      <div class="caught">수온 <b id="deathTemp">21.0℃</b>에서 잡혔습니다</div>
+      <div><span class="best" id="bestPill">내 최고 0.0초</span></div>
+    </div>
+
+    <div class="fact">
+      <div class="fact-h">알고 가세요</div>
+      <div class="fact-b" id="factBody"></div>
+    </div>
+
+    <button class="btn btn-again" id="againBtn">다시하기</button>
+
+    <div class="vote">
+      <div class="vote-lead">재밌으셨다면 투표 부탁드려요</div>
+      <div class="booth">B02</div>
+      <div class="team">젤리피쉬</div>
+      <div class="subject">해양열파로 동해안 해파리<br>대량 발생 위험을 예측</div>
+    </div>
+
+    <p class="credit">
+      부산과학고 · 김민아 · 강태영 · 장도건 · 황은성<br>
+      결과창 숫자는 우리가 실제로 측정한 값입니다
+    </p>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ────────────────────────────────────────────────────────────────
+   해파리 피하기 — 부스용 30초 게임
+
+   왜 이 규칙인가
+     시간이 갈수록 수온이 오르고, 해파리 수와 속도는 그 수온의 함수다.
+     난이도 곡선이 곧 우리 포스터의 주제다. 관객은 설명을 읽는 대신
+     손으로 겪는다.
+
+   난이도를 바꾸려면 바로 아래 상수 셋만 만지면 된다.
+   ──────────────────────────────────────────────────────────────── */
+const CFG = {
+  START_TEMP : 21.0,   // 시작 수온(℃)
+  TEMP_RATE  : 0.18,   // 초당 수온 상승(℃) — 크게 하면 빨리 어려워진다
+  SPAWN_GAIN : 12,     // 수온이 다 오르면 늘어나는 해파리 마릿수
+  BASE_JELLY : 2,      // 시작 마릿수
+  MAX_JELLY  : 14,
+  TEMP_SPAN  : 7.0,    // 21℃ → 28℃ 를 난이도 0 → 1 로 본다
+  FOLLOW     : 16,     // 물고기가 손가락을 따라가는 빠르기
+  FINGER_UP  : 44      // 손가락이 물고기를 가리지 않게 띄우는 거리(px)
+};
+
+/* 결과창 「알고 가세요」 — 전부 docs/핵심수치.md 의 실측값이다.
+   게임 규칙은 은유지만 이 숫자는 과장하지 않는다. */
+const FACTS = [
+  '같은 해수욕장·같은 달이라도, 우리 모델이 "위험"이라 한 주는 실제 발생률 ' +
+  '<b>50.7%</b>, 아니라 한 주는 <b>37.9%</b>였습니다. <em>1.34배</em> — ' +
+  '수온을 봐서 실제로 벌어온 몫입니다.',
+
+  '매주 위험한 곳 <b>상위 10곳</b>을 찍으면 그중 <b>34.7%</b>가 실제로 ' +
+  '맞습니다. 아무렇게나 찍을 때의 <em>27배</em>입니다.',
+
+  '같은 모델인데 <b>7~9월엔 적중률 52.9%</b>, <b>10~12월엔 9.2%</b>입니다. ' +
+  '철을 크게 탑니다. <em>못 맞히는 계절도 그대로 적었습니다.</em>',
+
+  '원자료 <b>36,455건</b> 중 <b>2,981건</b>(8.1%)이 위도와 경도가 뒤바뀌어 ' +
+  '<em>육지 한복판에 찍혀</em> 있었습니다. 그걸 되돌리는 게 첫 일이었습니다.',
+
+  '"열파가 폴립을 늘려 이듬해 해파리가 는다" — 우리가 세운 이 가설은 ' +
+  '3중 검정에서 <em>3전 3패로 기각</em>됐습니다. 안 되는 것도 결과입니다.',
+
+  '해파리 폴립 자료를 찾으려고 채집 기록 <b>32만 건</b>을 전수 검색했습니다. ' +
+  '진정해파리강은 <em>0건</em>이었습니다. 그래서 성체를 대리지표로 썼습니다.'
+];
+
+// ── 캔버스 ────────────────────────────────────────────────────
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d', { alpha:false });
+let W = 0, H = 0, DPR = 1;
+
+function resize(){
+  DPR = Math.min(window.devicePixelRatio || 1, 2);   // 고해상도 폰에서 과부하 방지
+  W = window.innerWidth;
+  H = window.innerHeight;
+  cv.width  = Math.round(W * DPR);
+  cv.height = Math.round(H * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  makeBubbles();
+  // 화면이 줄어들면 물고기가 밖에 남을 수 있다
+  fish.x = Math.min(Math.max(fish.x, 24), W - 24);
+  fish.y = Math.min(Math.max(fish.y, 24), H - 24);
+}
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 120));
+
+// ── 상태 ──────────────────────────────────────────────────────
+let mode = 'start';          // start | play | dying | over
+let t = 0;                   // 버틴 시간(초)
+let temp = CFG.START_TEMP;
+let jellies = [];
+let bubbles = [];
+let shake = 0, flash = 0;
+let lowSpec = false;
+
+const fish = { x:0, y:0, tx:0, ty:0, vx:0, vy:0 };
+
+function heat(){                                    // 난이도 0~1
+  return Math.min(Math.max((temp - CFG.START_TEMP) / CFG.TEMP_SPAN, 0), 1);
+}
+function targetCount(){
+  const n = CFG.BASE_JELLY + CFG.SPAWN_GAIN * heat();
+  return Math.min(Math.round(n), lowSpec ? 9 : CFG.MAX_JELLY);
+}
+
+// ── 입력 ──────────────────────────────────────────────────────
+function aim(e){
+  if (mode !== 'play') return;
+  const p = e.touches ? e.touches[0] : e;
+  fish.tx = p.clientX;
+  fish.ty = p.clientY - CFG.FINGER_UP;
+  e.preventDefault && e.preventDefault();
+}
+cv.addEventListener('pointerdown', aim, { passive:false });
+cv.addEventListener('pointermove', aim, { passive:false });
+// 포인터 이벤트가 없는 구형 브라우저 대비
+cv.addEventListener('touchstart', aim, { passive:false });
+cv.addEventListener('touchmove',  aim, { passive:false });
+
+// ── 해파리 ────────────────────────────────────────────────────
+function spawnJelly(){
+  const h = heat();
+  const r = 15 + Math.random() * 12;
+  jellies.push({
+    bx : 30 + Math.random() * (W - 60),          // 흔들림의 중심
+    y  : -r * 2 - Math.random() * H * 0.5,
+    r  : r,
+    // 떨어지는 빠르기도 수온을 탄다 (화면 높이 기준 비율)
+    sp : (0.20 + 0.25 * h) * H * (0.85 + Math.random() * 0.35),
+    amp: 14 + Math.random() * 30,                // 좌우로 흔들리는 폭
+    fq : 0.5 + Math.random() * 0.9,
+    ph : Math.random() * Math.PI * 2,
+    hue: Math.random() < 0.5 ? 0 : 1,
+    x  : 0
+  });
+}
+
+function drawJelly(j){
+  const r = j.r, x = j.x, y = j.y;
+  const sway = Math.sin(j.ph + t * 2.2);
+
+  ctx.save();
+  ctx.translate(x, y);
+
+  // 종(bell) — 안이 비쳐 보이도록 반투명
+  const g = ctx.createRadialGradient(0, -r*0.25, r*0.1, 0, 0, r*1.15);
+  if (j.hue === 0){
+    g.addColorStop(0,   'rgba(255,235,247,.95)');
+    g.addColorStop(0.55,'rgba(247,168,205,.72)');
+    g.addColorStop(1,   'rgba(214,110,170,.15)');
+  } else {
+    g.addColorStop(0,   'rgba(232,246,255,.95)');
+    g.addColorStop(0.55,'rgba(150,205,240,.72)');
+    g.addColorStop(1,   'rgba(96,160,215,.15)');
+  }
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, r, r * 0.86, 0, Math.PI, Math.PI * 2);
+  ctx.quadraticCurveTo(r * 0.55, r * 0.5, 0, r * 0.34);
+  ctx.quadraticCurveTo(-r * 0.55, r * 0.5, -r, 0);
+  ctx.fill();
+
+  // 촉수 — 뒤로 흐르며 흔들린다
+  ctx.strokeStyle = j.hue === 0 ? 'rgba(250,190,220,.6)' : 'rgba(175,215,245,.6)';
+  ctx.lineWidth = Math.max(1.2, r * 0.075);
+  ctx.lineCap = 'round';
+  for (let i = -2; i <= 2; i++){
+    const ox = i * r * 0.32;
+    ctx.beginPath();
+    ctx.moveTo(ox, r * 0.3);
+    ctx.quadraticCurveTo(
+      ox + sway * (5 + i * 2), r * 0.95,
+      ox + sway * (11 + i * 3), r * 1.75
+    );
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ── 물고기 ────────────────────────────────────────────────────
+function drawFish(){
+  const ang = Math.atan2(fish.vy, fish.vx * 2) * 0.35;
+  const dir = fish.vx < -6 ? -1 : 1;
+
+  ctx.save();
+  ctx.translate(fish.x, fish.y);
+  ctx.rotate(ang * (dir > 0 ? 1 : -1));
+  ctx.scale(dir, 1);
+
+  ctx.shadowColor = 'rgba(255,150,40,.55)';
+  ctx.shadowBlur = 16;
+
+  ctx.fillStyle = '#FF9F2E';
+  ctx.beginPath();                       // 꼬리
+  ctx.moveTo(-11, 0);
+  ctx.lineTo(-21, -8.5);
+  ctx.lineTo(-18, 0);
+  ctx.lineTo(-21, 8.5);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = '#FFB63E';
+  ctx.beginPath();                       // 몸통
+  ctx.ellipse(0, 0, 15, 10, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(255,255,255,.55)';
+  ctx.beginPath();                       // 등지느러미 쪽 밝은 면
+  ctx.ellipse(-1, -3.5, 9, 3.6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#25313D';
+  ctx.beginPath();
+  ctx.arc(7, -2, 2.3, 0, Math.PI * 2);   // 눈
+  ctx.fill();
+  ctx.restore();
+}
+
+// ── 배경 ──────────────────────────────────────────────────────
+function makeBubbles(){
+  bubbles = [];
+  const n = lowSpec ? 0 : 16;
+  for (let i = 0; i < n; i++){
+    bubbles.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: 1.2 + Math.random() * 3,
+      sp: 12 + Math.random() * 34,
+      ph: Math.random() * 6.28
+    });
+  }
+}
+
+function drawBackground(dt){
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0,   '#8FD4EA');
+  g.addColorStop(0.3, '#3E92BC');
+  g.addColorStop(0.7, '#12527E');
+  g.addColorStop(1,   '#06243B');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  if (!lowSpec){                              // 수면에서 내려오는 빛줄기
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 3; i++){
+      const x = W * (0.2 + i * 0.3) + Math.sin(t * 0.25 + i) * W * 0.06;
+      const lg = ctx.createLinearGradient(x, 0, x, H * 0.8);
+      lg.addColorStop(0, 'rgba(255,255,255,.16)');
+      lg.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = lg;
+      ctx.beginPath();
+      ctx.moveTo(x - 22, 0); ctx.lineTo(x + 22, 0);
+      ctx.lineTo(x + 78, H * 0.8); ctx.lineTo(x + 14, H * 0.8);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  ctx.fillStyle = 'rgba(255,255,255,.24)';    // 물방울
+  for (const b of bubbles){
+    b.y -= b.sp * dt;
+    if (b.y < -6){ b.y = H + 6; b.x = Math.random() * W; }
+    ctx.beginPath();
+    ctx.arc(b.x + Math.sin(t * 1.6 + b.ph) * 5, b.y, b.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// ── 충돌 ──────────────────────────────────────────────────────
+function hit(){
+  for (const j of jellies){
+    const dx = j.x - fish.x, dy = j.y - fish.y;
+    // 종만 판정한다. 촉수까지 잡으면 억울해서 다시 안 한다
+    const rr = j.r * 0.72 + 10;
+    if (dx * dx + dy * dy < rr * rr) return true;
+  }
+  return false;
+}
+
+// ── 한 프레임 ─────────────────────────────────────────────────
+function step(dt){
+  if (mode === 'play'){
+    t    += dt;
+    temp  = CFG.START_TEMP + CFG.TEMP_RATE * t;
+
+    while (jellies.length < targetCount()) spawnJelly();
+
+    // 손가락을 향해 부드럽게 따라간다 (프레임 수와 무관하게 같은 느낌)
+    const k  = 1 - Math.exp(-CFG.FOLLOW * dt);
+    const px = fish.x, py = fish.y;
+    fish.x += (fish.tx - fish.x) * k;
+    fish.y += (fish.ty - fish.y) * k;
+    fish.x  = Math.min(Math.max(fish.x, 20), W - 20);
+    fish.y  = Math.min(Math.max(fish.y, 20), H - 20);
+    fish.vx = (fish.x - px) / Math.max(dt, 1e-4);
+    fish.vy = (fish.y - py) / Math.max(dt, 1e-4);
+  }
+
+  for (let i = jellies.length - 1; i >= 0; i--){
+    const j = jellies[i];
+    j.y += j.sp * dt;
+    j.x  = j.bx + Math.sin(j.ph + t * j.fq) * j.amp;
+    if (j.y > H + j.r * 3) jellies.splice(i, 1);
+  }
+
+  if (mode === 'play' && hit()) die();
+}
+
+function draw(dt){
+  ctx.save();
+  if (shake > 0){                       // 잡혔을 때 화면이 한 번 흔들린다
+    ctx.translate((Math.random() - .5) * shake, (Math.random() - .5) * shake);
+    shake = Math.max(0, shake - dt * 60);
+  }
+  drawBackground(dt);
+  for (const j of jellies) drawJelly(j);
+  if (mode !== 'over') drawFish();
+  ctx.restore();
+
+  if (flash > 0){
+    ctx.fillStyle = 'rgba(255,120,150,' + (flash * 0.5).toFixed(3) + ')';
+    ctx.fillRect(0, 0, W, H);
+    flash = Math.max(0, flash - dt * 2.6);
+  }
+}
+
+// ── HUD ───────────────────────────────────────────────────────
+const el = {
+  hud:      document.getElementById('hud'),
+  tempVal:  document.getElementById('tempVal'),
+  tempDot:  document.getElementById('tempDot'),
+  timeVal:  document.getElementById('timeVal'),
+  start:    document.getElementById('start'),
+  over:     document.getElementById('over'),
+  scoreVal: document.getElementById('scoreVal'),
+  deathTemp:document.getElementById('deathTemp'),
+  bestPill: document.getElementById('bestPill'),
+  factBody: document.getElementById('factBody')
+};
+
+let hudTick = 0;
+function updateHud(dt){
+  hudTick += dt;
+  if (hudTick < 0.08) return;           // 초당 12번이면 충분하다
+  hudTick = 0;
+  el.tempVal.textContent = temp.toFixed(1) + '℃';
+  el.timeVal.textContent = t.toFixed(1) + '초';
+  const h = heat();                     // 파랑 → 빨강
+  const r = Math.round(49  + (240 - 49)  * h);
+  const g = Math.round(130 + (68  - 130) * h);
+  const b = Math.round(246 + (82  - 246) * h);
+  el.tempDot.style.background = 'rgb(' + r + ',' + g + ',' + b + ')';
+}
+
+// ── 진행 ──────────────────────────────────────────────────────
+function startGame(){
+  mode = 'play';
+  t = 0; temp = CFG.START_TEMP;
+  jellies = []; shake = 0; flash = 0;
+  fish.x = fish.tx = W / 2;
+  fish.y = fish.ty = H * 0.72;
+  fish.vx = fish.vy = 0;
+  el.start.classList.remove('on');
+  el.over.classList.remove('on');
+  el.hud.classList.add('on');
+}
+
+function die(){
+  mode = 'dying';
+  shake = 14; flash = 1;
+  if (navigator.vibrate) { try { navigator.vibrate(60); } catch(e){} }
+  setTimeout(showResult, 480);
+}
+
+function showResult(){
+  mode = 'over';
+  el.hud.classList.remove('on');
+
+  const score = t;
+  let best = 0;
+  try { best = parseFloat(localStorage.getItem('b02_best') || '0') || 0; } catch(e){}
+  const isNew = score > best;
+  if (isNew){
+    best = score;
+    try { localStorage.setItem('b02_best', String(best)); } catch(e){}
+  }
+
+  el.scoreVal.innerHTML = score.toFixed(1) + '<span>초</span>';
+  el.deathTemp.textContent = temp.toFixed(1) + '℃';
+  el.bestPill.textContent = isNew
+    ? '🎉 최고 기록 경신!  ' + best.toFixed(1) + '초'
+    : '내 최고 ' + best.toFixed(1) + '초';
+  el.bestPill.className = isNew ? 'best new' : 'best';
+
+  // 매 판 다른 숫자를 보여줘야 여러 판 한 사람이 여러 개를 들고 간다
+  let idx = 0;
+  try { idx = (parseInt(localStorage.getItem('b02_fact') || '-1', 10) + 1) % FACTS.length; } catch(e){}
+  if (!(idx >= 0 && idx < FACTS.length)) idx = 0;
+  try { localStorage.setItem('b02_fact', String(idx)); } catch(e){}
+  el.factBody.innerHTML = FACTS[idx];
+
+  el.over.scrollTop = 0;
+  el.over.classList.add('on');
+}
+
+document.getElementById('goBtn').addEventListener('click', startGame);
+document.getElementById('againBtn').addEventListener('click', startGame);
+
+// ── 루프 ──────────────────────────────────────────────────────
+let last = 0, frames = 0, slow = 0;
+
+function loop(now){
+  requestAnimationFrame(loop);
+  if (!last){ last = now; return; }
+  let dt = (now - last) / 1000;
+  last = now;
+  if (dt > 0.05) dt = 0.05;             // 탭을 다시 열었을 때 순간이동 방지
+
+  // 느린 기기라면 스스로 가볍게 바꾼다 (처음 2초만 본다)
+  if (!lowSpec && mode === 'play'){
+    frames++;
+    if (dt > 1 / 45) slow++;
+    if (frames === 120){
+      if (slow > 50){ lowSpec = true; makeBubbles(); }
+      frames = 0; slow = 0;
+    }
+  }
+
+  step(dt);
+  draw(dt);
+  if (mode === 'play' || mode === 'dying') updateHud(dt);
+}
+
+document.addEventListener('visibilitychange', () => { last = 0; });
+
+resize();
+requestAnimationFrame(loop);
+</script>
