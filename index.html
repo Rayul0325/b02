@@ -801,10 +801,9 @@ function updateHud(dt){
   const m = mult();
   el.multBadge.textContent = '×' + m.toFixed(1);
   el.multBadge.classList.toggle('on', m > 1);
-  const h = heat();                     // 파랑 → 빨강
-  el.tempDot.style.background = 'rgb(' +
-    Math.round(49 + 191 * h) + ',' + Math.round(130 - 62 * h) + ',' +
-    Math.round(246 - 164 * h) + ')';
+  // 파랑에서 빨강으로 곧장 섞으면 중간이 보라가 된다(실측). 단계 색을 그대로
+  // 쓰면 화면 어디를 봐도 같은 색 체계가 된다.
+  el.tempDot.style.background = STAGES[stage].color;
 }
 
 // ── 진행 ──────────────────────────────────────────────────────
