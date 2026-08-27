@@ -199,7 +199,7 @@ h1 .l2{display:block;color:var(--accent)}
 /* ── 결과 — 책상에 놓인 인화물 ── */
 #over{background:rgba(246,249,253,.9)}
 .sheet{background:var(--surface);box-shadow:var(--print-shadow);
-  padding:var(--s-6) var(--s-5) var(--s-5);transform:rotate(-.5deg)}
+  padding:var(--s-6) var(--s-5);transform:rotate(-.5deg)}
 .res-score{display:flex;align-items:baseline;gap:5px}
 #scoreVal{font-family:var(--font-display);font-weight:700;
   font-size:clamp(58px,19vw,74px);line-height:.88;
@@ -212,19 +212,29 @@ h1 .l2{display:block;color:var(--accent)}
 #metaLine{margin:var(--s-4) 0 0;padding-top:var(--s-3);
   border-top:1.5px dashed var(--ink-ghost);font-size:12px;color:var(--ink-3)}
 #metaLine em{font-style:normal;color:var(--accent-press);font-weight:700}
-.again-wrap{margin-top:var(--s-5)}
+.again-wrap{margin-top:var(--s-4)}
+.btn-secondary{width:100%;padding:15px 20px;font-size:17px;
+  color:var(--ink);background:var(--surface);border:1px solid transparent;
+  border-image-source:var(--hand-border);border-image-slice:8;
+  border-image-width:8px;border-image-repeat:round}
 
 /* 투표 — 노란 테이프를 붙인 쪽지 */
-.vote{margin-top:var(--s-6);background:var(--signal);color:var(--signal-ink);
-  padding:var(--s-5);transform:rotate(.8deg);box-shadow:var(--shadow-md);
-  display:grid;grid-template-columns:minmax(0,auto) minmax(0,1fr);gap:0 var(--s-4);
-  align-items:center}
-.vote-no{grid-row:1/3;font-family:var(--font-display);font-weight:700;font-size:46px;
-  line-height:.84;-webkit-text-stroke:.03em currentColor;paint-order:fill stroke}
-.vote-team{font-family:var(--font-title);font-size:18px}
-.vote-ask{font-size:12.5px;font-weight:600;opacity:.78;margin-top:2px}
-.vote-sub{grid-column:1/3;margin-top:var(--s-4);padding-top:var(--s-3);
-  border-top:1.5px dashed rgba(23,23,17,.28);font-size:11.5px;line-height:1.5;opacity:.8}
+.vote{margin-top:var(--s-5);background:var(--signal);color:var(--signal-ink);
+  padding:var(--s-5) var(--s-5) var(--s-4);transform:rotate(-1deg);
+  box-shadow:3px 5px 10px -3px rgba(18,22,41,.28),14px 22px 34px -12px rgba(18,22,41,.3);
+  border:1px solid transparent;border-image-source:var(--hand-border);
+  border-image-slice:8;border-image-width:8px;border-image-repeat:round;
+  animation:handBoilLine .42s step-end infinite}
+.vote-ask{margin:0;font-family:var(--font-title);font-size:16px;line-height:1.3;
+  color:rgba(23,23,17,.72)}
+.vote-ask b{color:var(--signal-ink);font-weight:400}
+.vote-id{margin-top:var(--s-2);display:flex;align-items:baseline;gap:var(--s-3);flex-wrap:wrap}
+.vote-no{font-family:var(--font-display);font-weight:700;
+  font-size:clamp(62px,20vw,80px);line-height:.86;letter-spacing:-.01em;
+  -webkit-text-stroke:.035em currentColor;paint-order:fill stroke}
+.vote-team{font-family:var(--font-title);font-size:23px}
+.vote-sub{margin:var(--s-4) 0 0;padding-top:var(--s-3);
+  border-top:1.5px dashed rgba(23,23,17,.3);font-size:11.5px;line-height:1.5;opacity:.82}
 .credit{margin-top:var(--s-4);font-size:10.5px;color:var(--ink-3);line-height:1.7}
 
 @media (prefers-reduced-motion:reduce){
@@ -238,7 +248,9 @@ h1 .l2{display:block;color:var(--accent)}
   .go-wrap{margin-top:var(--s-5)} .btn-primary{padding:15px;font-size:17px}
   .sheet{padding:var(--s-5) var(--s-4) var(--s-4)}
   #scoreVal{font-size:clamp(46px,15vw,58px)}
-  .vote{margin-top:var(--s-4);padding:var(--s-4)} .vote-no{font-size:38px}
+  .vote{margin-top:var(--s-4);padding:var(--s-4)} .vote-no{font-size:clamp(50px,16vw,62px)}
+  .vote-ask{font-size:14px} .vote-team{font-size:19px}
+  .btn-secondary{padding:12px;font-size:15.5px}
 }
 </style>
 
@@ -278,14 +290,18 @@ h1 .l2{display:block;color:var(--accent)}
       <div class="res-score"><span id="scoreVal" class="num">0</span><span class="unit">점</span></div>
       <div class="res-rank"><span id="rankBadge">해수욕객</span><span id="nextRank" class="num"></span></div>
       <p id="metaLine" class="num"></p>
-      <div class="again-wrap"><button class="btn btn-primary" id="againBtn">다시하기</button></div>
     </div>
+
     <div class="vote">
-      <span class="vote-no num">B02</span>
-      <span class="vote-team">젤리피쉬</span>
-      <span class="vote-ask">재밌으셨다면 투표 부탁드립니다</span>
-      <span class="vote-sub">해양열파로 동해안 해파리 대량 발생 위험을 예측 · 부산과학고</span>
+      <p class="vote-ask">재밌으셨다면 <b>투표</b> 부탁드립니다</p>
+      <div class="vote-id">
+        <span class="vote-no num">B02</span>
+        <span class="vote-team">젤리피쉬</span>
+      </div>
+      <p class="vote-sub">해양열파로 동해안 해파리<br>대량 발생 위험을 예측 · 부산과학고</p>
     </div>
+
+    <div class="again-wrap"><button class="btn btn-secondary" id="againBtn">다시하기</button></div>
     <p class="credit">김민아 · 강태영 · 장도건 · 황은성</p>
   </div>
 </div>
