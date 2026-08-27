@@ -145,31 +145,10 @@ h1{margin:18px 0 0; font-size:40px; font-weight:800; letter-spacing:-.035em; lin
   font-size:16px; font-weight:800; letter-spacing:-.01em;
   background:rgba(255,201,74,.16); color:var(--gold); border:1px solid rgba(255,201,74,.42);
 }
-.next{margin-top:7px; font-size:12.5px; font-weight:600; color:#8FB2C6}
+.next{margin-top:8px; font-size:13px; font-weight:600; color:#8FB2C6}
 .next b{color:var(--gold); font-weight:800}
-.statline{
-  margin-top:12px; display:flex; justify-content:center; gap:0;
-  background:rgba(255,255,255,.07); border-radius:12px; padding:8px 0;
-}
-.statline div{flex:1; text-align:center; position:relative}
-.statline div + div::before{
-  content:""; position:absolute; left:0; top:14%; height:72%;
-  width:1px; background:rgba(255,255,255,.14);
-}
-.statline b{display:block; font-size:18px; font-weight:800; color:#fff}
-.statline span{display:block; margin-top:1px; font-size:11.5px; color:#8FB2C6; font-weight:600}
-.best{
-  margin-top:11px; display:inline-flex; padding:5px 13px; border-radius:999px;
-  background:rgba(255,255,255,.1); font-size:12.5px; color:#CFE3EE; font-weight:600;
-}
-.best.new{background:rgba(255,149,0,.2); color:#FFD08A}
-
-.obs-note{
-  margin-top:13px; padding:12px 15px; border-radius:var(--r);
-  background:rgba(49,130,246,.14); border:1px solid rgba(49,130,246,.34);
-  font-size:13.5px; line-height:1.6; color:#D6E9FA; text-align:center;
-}
-.obs-note b{color:#fff; font-weight:800}
+.meta{margin-top:12px; font-size:12.5px; font-weight:600; color:#7FA3B8}
+.meta em{font-style:normal; color:#FFD08A; font-weight:800}
 
 .fact{margin-top:11px; padding:14px 16px; background:var(--panel); color:var(--ink);
   border-radius:var(--r); box-shadow:0 8px 28px rgba(0,0,0,.28)}
@@ -202,12 +181,8 @@ h1{margin:18px 0 0; font-size:40px; font-weight:800; letter-spacing:-.035em; lin
   .score span{font-size:16px}
   .rank{margin-top:8px; font-size:14px; padding:4px 14px}
   .next{margin-top:5px; font-size:11.5px}
-  .statline{margin-top:9px; padding:6px 0}
-  .statline b{font-size:15px}
-  .statline span{font-size:10.5px}
-  .best{margin-top:8px; font-size:11.5px; padding:4px 11px}
-  .obs-note{margin-top:8px; padding:9px 12px; font-size:12px; line-height:1.5}
-  .fact{margin-top:8px; padding:10px 13px}
+  .meta{margin-top:9px; font-size:11.5px}
+  .fact{margin-top:10px; padding:11px 13px}
   .fact-h{margin-bottom:6px; font-size:11px}
   .fact-b{font-size:12.5px; line-height:1.5}
   .btn-again{margin-top:9px; padding:13px; font-size:16px}
@@ -258,15 +233,8 @@ h1{margin:18px 0 0; font-size:40px; font-weight:800; letter-spacing:-.035em; lin
       <div class="score tnum" id="scoreVal">0<span>점</span></div>
       <div><span class="rank" id="rankBadge">해수욕객</span></div>
       <div class="next tnum" id="nextRank"></div>
-      <div class="statline tnum">
-        <div><b id="obsVal">0</b><span>관측</span></div>
-        <div><b id="timeStat">0.0</b><span>초 버팀</span></div>
-        <div><b id="deathTemp">21.0</b><span>℃에서 잡힘</span></div>
-      </div>
-      <div><span class="best tnum" id="bestPill">내 최고 0점</span></div>
+      <div class="meta tnum" id="metaLine"></div>
     </div>
-
-    <div class="obs-note" id="obsNote"></div>
 
     <div class="fact">
       <div class="fact-h">알고 가세요</div>
@@ -282,10 +250,7 @@ h1{margin:18px 0 0; font-size:40px; font-weight:800; letter-spacing:-.035em; lin
       <div class="subject">해양열파로 동해안 해파리<br>대량 발생 위험을 예측</div>
     </div>
 
-    <p class="credit">
-      부산과학고 · 김민아 · 강태영 · 장도건 · 황은성<br>
-      결과창 숫자는 우리가 실제로 측정한 값입니다
-    </p>
+    <p class="credit">부산과학고 · 김민아 · 강태영 · 장도건 · 황은성</p>
   </div>
 </div>
 
@@ -348,24 +313,25 @@ const RANKS = [
 /* 결과창 「알고 가세요」 — 전부 docs/핵심수치.md 의 실측값이다.
    게임 규칙은 은유지만 이 숫자는 과장하지 않는다. */
 const FACTS = [
-  '같은 해수욕장·같은 달이라도, 우리 모델이 "위험"이라 한 주는 실제 발생률 ' +
-  '<b>50.7%</b>, 아니라 한 주는 <b>37.9%</b>였습니다. <em>1.34배</em> — ' +
-  '수온을 봐서 실제로 벌어온 몫입니다.',
+  '모델이 <b>"위험"</b>이라 한 주는 실제 발생률 <b>50.7%</b>, 아니라 한 주는 ' +
+  '<b>37.9%</b>. <em>1.34배</em>가 수온을 봐서 번 몫입니다.',
 
-  '매주 위험한 곳 <b>상위 10곳</b>을 찍으면 그중 <b>34.7%</b>가 실제로 ' +
-  '맞습니다. 아무렇게나 찍을 때의 <em>27배</em>입니다.',
+  '매주 <b>상위 10곳</b>을 찍으면 <b>34.7%</b>가 실제로 맞습니다. ' +
+  '아무렇게나 찍을 때의 <em>27배</em>.',
 
-  '같은 모델인데 <b>7~9월엔 적중률 52.9%</b>, <b>10~12월엔 9.2%</b>입니다. ' +
-  '철을 크게 탑니다. <em>못 맞히는 계절도 그대로 적었습니다.</em>',
+  '<b>7~9월 적중률 52.9%</b>, <b>10~12월 9.2%</b>. ' +
+  '<em>못 맞히는 계절도 그대로 적었습니다.</em>',
 
-  '원자료 <b>36,455건</b> 중 <b>2,981건</b>(8.1%)이 위도와 경도가 뒤바뀌어 ' +
-  '<em>육지 한복판에 찍혀</em> 있었습니다. 그걸 되돌리는 게 첫 일이었습니다.',
+  '원자료 36,455건 중 <b>2,981건</b>이 위경도가 뒤바뀌어 ' +
+  '<em>육지에 찍혀</em> 있었습니다.',
 
-  '"열파가 폴립을 늘려 이듬해 해파리가 는다" — 우리가 세운 이 가설은 ' +
-  '3중 검정에서 <em>3전 3패로 기각</em>됐습니다. 안 되는 것도 결과입니다.',
+  '"열파 → 폴립 → 이듬해 해파리" 우리 가설은 3중 검정에서 ' +
+  '<em>3전 3패로 기각</em>됐습니다. 안 되는 것도 결과입니다.',
 
-  '해파리 폴립 자료를 찾으려고 채집 기록 <b>32만 건</b>을 전수 검색했습니다. ' +
-  '진정해파리강은 <em>0건</em>이었습니다. 그래서 성체를 대리지표로 썼습니다.'
+  '폴립을 찾으려 채집 <b>32만 건</b>을 전수 검색했지만 ' +
+  '진정해파리강은 <em>0건</em>이었습니다.',
+
+  '이 모델은 매주 목요일 전국을 도는 <b>정기조사 189일</b>치로 만들었습니다.'
 ];
 
 // ── 캔버스 ────────────────────────────────────────────────────
@@ -769,11 +735,7 @@ const el = {
   scoreVal: document.getElementById('scoreVal'),
   rankBadge:document.getElementById('rankBadge'),
   nextRank: document.getElementById('nextRank'),
-  obsVal:   document.getElementById('obsVal'),
-  timeStat: document.getElementById('timeStat'),
-  deathTemp:document.getElementById('deathTemp'),
-  bestPill: document.getElementById('bestPill'),
-  obsNote:  document.getElementById('obsNote'),
+  metaLine: document.getElementById('metaLine'),
   factBody: document.getElementById('factBody')
 };
 
@@ -852,20 +814,11 @@ function showResult(){
   el.nextRank.innerHTML = up
     ? '<b>' + up.name + '</b>까지 ' + (up.min - final).toLocaleString('ko-KR') + '점'
     : '최고 등급입니다'; 
-  el.obsVal.textContent    = obs;
-  el.timeStat.textContent  = t.toFixed(1);
-  el.deathTemp.textContent = temp.toFixed(1);
-  el.bestPill.textContent = isNew
-    ? '🎉 최고 기록 경신!  ' + best.toLocaleString('ko-KR') + '점'
-    : '내 최고 ' + best.toLocaleString('ko-KR') + '점';
-  el.bestPill.className = isNew ? 'best tnum new' : 'best tnum';
-
-  // 게임에서 모은 관측이 우리 연구의 출발점과 이어진다
-  el.obsNote.innerHTML = obs > 0
-    ? '관측 <b>' + obs + '개</b>를 모으셨습니다.<br>' +
-      '우리는 <b>189번의 조사</b>로 이 모델을 만들었습니다.'
-    : '부표를 하나도 못 모으셨네요.<br>' +
-      '우리는 <b>189번의 조사</b>로 이 모델을 만들었습니다.';
+  // 부차적인 숫자는 전부 한 줄에 넣는다. 30초 게임 뒤에 읽을 것이 열 개면
+  // 아무것도 안 읽힌다.
+  el.metaLine.innerHTML = '관측 ' + obs + '개 · ' + t.toFixed(1) + '초 · ' +
+    (isNew ? '<em>🎉 최고 기록!</em>'
+           : '내 최고 ' + best.toLocaleString('ko-KR') + '점');
 
   // 매 판 다른 숫자를 보여줘야 여러 판 한 사람이 여러 개를 들고 간다
   let idx = 0;
