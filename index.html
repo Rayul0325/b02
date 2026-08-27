@@ -1,259 +1,327 @@
 <!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#06243B">
+<meta name="theme-color" content="#071A26">
+<!-- 이 페이지는 바깥으로 아무것도 부르지 않는다. 그 사실을 브라우저에 강제해 둔다.
+     혹시 나중에 누가 외부 스크립트를 끼워 넣어도 브라우저가 막는다. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="referrer" content="no-referrer">
 <title>해파리 피하기 · B02 젤리피쉬</title>
 <meta name="description" content="수온이 오를수록 해파리가 늘어납니다. 관측 부표를 모으고 살아남으세요 — 제9회 Ocean ICT Festival B02 젤리피쉬">
 
 <style>
-/* 색·모서리·글꼴은 우리 팀의 다른 네 화면(src/design.py)과 같은 값을 쓴다.
-   한 팀 작품으로 보여야 하기 때문이다. 바닷속 화면만 어두운 쪽을 따로 둔다. */
+/* Hallmark · app-screen scope · genre: atmospheric
+ * theme: custom "deep-sea instrument"
+ *   paper  oklch(19% 0.035 235)   dark band
+ *   accent oklch(80% 0.15 82)     warm / amber (관측 부표)
+ *   signal oklch(64% 0.20 27)     warm-red (경보 · 부스 번호)
+ *   display: system mono (숫자) + system sans (한글) — 2+1 pairing, 네트워크 의존 0
+ * pre-emit critique: P5 H5 E4 S5 R5 V4
+ */
+
 :root{
-  --ink:#191F28; --ink2:#4E5968; --mut:#8B95A1;
-  --panel:#FFFFFF; --soft:#F2F4F6; --line:#E5E8EB;
-  --accent:#3182F6; --warm:#F04452; --ok:#15C39A; --acc:#FF9500;
-  --gold:#FFC94A;
-  --r:16px;
-  color-scheme:dark;
+  /* ── 종이와 잉크 ── */
+  --paper:    oklch(19% 0.035 235);
+  --paper-2:  oklch(24% 0.038 235);
+  --paper-3:  oklch(29% 0.036 235);
+  --ink:      oklch(97% 0.006 235);
+  --ink-2:    oklch(76% 0.022 235);
+  --ink-3:    oklch(58% 0.028 235);
+  --rule:     oklch(34% 0.030 235);
+  --rule-2:   oklch(44% 0.034 235);
+
+  /* ── 신호색 두 가지뿐 ── */
+  --accent:   oklch(80% 0.150 82);
+  --accent-d: oklch(64% 0.140 82);
+  --signal:   oklch(64% 0.200 27);
+  --focus:    oklch(84% 0.110 235);
+
+  /* ── 단계색 ── */
+  --st-0: oklch(78% 0.090 220);
+  --st-1: oklch(80% 0.140 82);
+  --st-2: oklch(68% 0.180 40);
+  --st-3: oklch(64% 0.200 27);
+
+  /* ── 글꼴: 2+1 ── */
+  --font-body: -apple-system,BlinkMacSystemFont,"Pretendard","Pretendard Variable",
+               "Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
+  --font-num:  ui-monospace,"SF Mono",SFMono-Regular,"Roboto Mono","DejaVu Sans Mono",monospace;
+
+  /* ── 4pt 간격 ── */
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:20px;
+  --s-6:24px; --s-8:32px; --s-10:40px; --s-12:48px;
+
+  --radius: 3px;
+  --ease-out: cubic-bezier(.16,.84,.44,1);
+  --dur: 220ms;
+  color-scheme: dark;
 }
+
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
-html,body{height:100%; margin:0; overflow:hidden}
+html,body{height:100%; margin:0; overflow-x:clip}
+html{overflow-y:hidden}
 body{
-  background:#06243B; color:#fff;
-  font:16px/1.6 -apple-system,BlinkMacSystemFont,"Pretendard","Pretendard Variable",
-       "Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  background:var(--paper); color:var(--ink);
+  font:400 16px/1.6 var(--font-body);
   -webkit-font-smoothing:antialiased;
   user-select:none; -webkit-user-select:none;
   touch-action:none; overscroll-behavior:none;
+  overflow:hidden;
 }
 canvas{display:block; position:fixed; inset:0; width:100%; height:100%}
-.tnum{font-variant-numeric:tabular-nums; font-feature-settings:"tnum"}
+
+/* 숫자는 계기판처럼 — 고정폭, 좁은 자간 */
+.num{font-family:var(--font-num); font-variant-numeric:tabular-nums;
+     font-feature-settings:"tnum"; letter-spacing:-.02em}
 
 .scr{
-  position:fixed; inset:0; z-index:3;
-  display:none; flex-direction:column;
-  padding:max(18px,env(safe-area-inset-top)) 20px max(18px,env(safe-area-inset-bottom));
+  position:fixed; inset:0; z-index:3; display:none; flex-direction:column;
+  padding:max(22px,env(safe-area-inset-top)) 22px max(22px,env(safe-area-inset-bottom));
   overflow-y:auto; overscroll-behavior:contain;
 }
 .scr.on{display:flex}
 .scr::-webkit-scrollbar{display:none}
+.wrap{width:100%; max-width:400px; margin:auto auto}
 
-/* ── 시작 화면 ─────────────────────────────────────── */
-#start{
-  justify-content:center; align-items:center; text-align:center;
-  background:radial-gradient(120% 80% at 50% 30%, rgba(9,44,72,.55), rgba(4,22,38,.93));
+/* ══ 시작 화면 ══════════════════════════════════════════
+   가운데 정렬을 버리고 왼쪽 기준선 하나로 세운다. */
+#start{background:linear-gradient(180deg,
+  color-mix(in oklab, var(--paper) 78%, transparent) 0%,
+  color-mix(in oklab, var(--paper) 96%, transparent) 46%,
+  var(--paper) 100%)}
+
+.head{display:flex; align-items:baseline; gap:var(--s-3); margin-bottom:var(--s-10)}
+.head .mark{
+  font-family:var(--font-num); font-size:12px; font-weight:700; letter-spacing:.06em;
+  color:var(--paper); background:var(--accent);
+  padding:3px 7px; border-radius:2px;
 }
-.badge{
-  display:inline-flex; align-items:center; gap:8px;
-  padding:6px 14px; border-radius:999px;
-  background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22);
-  font-size:13px; font-weight:700;
+.head .who{font-size:12px; font-weight:600; letter-spacing:.02em; color:var(--ink-2)}
+
+h1{
+  margin:0; font-size:clamp(46px,15vw,62px); font-weight:800;
+  letter-spacing:-.045em; line-height:.92;
+  overflow-wrap:anywhere; min-width:0;
 }
-.badge b{color:#8FD4EA}
-h1{margin:18px 0 0; font-size:40px; font-weight:800; letter-spacing:-.035em; line-height:1.15}
-.tagline{margin:12px 0 0; font-size:17px; color:#C6DEEC; font-weight:500}
-.howto{
-  margin:24px 0 0; padding:16px 18px; max-width:340px; width:100%;
-  background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14);
-  border-radius:var(--r); font-size:14.5px; line-height:1.7; color:#DCEAF3; text-align:left;
+h1 .l2{display:block; color:var(--ink-2)}
+.lede{
+  margin:var(--s-5) 0 0; max-width:23ch;
+  font-size:16px; line-height:1.55; color:var(--ink-2);
 }
-.howto div{display:flex; gap:10px; align-items:flex-start}
-.howto div + div{margin-top:9px}
-.howto i{flex:none; width:20px; text-align:center; font-style:normal; font-size:15px}
-.howto b{color:#fff}
-.howto .g{color:var(--gold)}
+
+/* 규칙표 — 이모지 목록 대신 사양서 */
+.spec{margin:var(--s-10) 0 0; border-top:1px solid var(--rule)}
+.spec-row{
+  display:grid; grid-template-columns:minmax(0,86px) minmax(0,1fr);
+  gap:var(--s-4); align-items:baseline;
+  padding:var(--s-3) 0; border-bottom:1px solid var(--rule);
+}
+.spec-row dt{font-size:12.5px; font-weight:700; color:var(--ink); letter-spacing:-.01em}
+.spec-row dd{margin:0; font-size:13px; line-height:1.5; color:var(--ink-2)}
+.spec-row dd b{color:var(--accent); font-weight:700}
 
 .btn{
-  -webkit-appearance:none; appearance:none; border:0; cursor:pointer;
-  font-family:inherit; font-weight:700; letter-spacing:-.01em;
-  border-radius:14px; transition:transform .08s ease;
+  -webkit-appearance:none; appearance:none; border:1px solid transparent;
+  cursor:pointer; font-family:var(--font-body); font-weight:700;
+  letter-spacing:-.01em; border-radius:var(--radius);
+  transition:background var(--dur) var(--ease-out), color var(--dur) var(--ease-out),
+             border-color var(--dur) var(--ease-out), transform 90ms var(--ease-out);
 }
-.btn:active{transform:scale(.97)}
-.btn-go{
-  margin-top:26px; width:100%; max-width:340px; padding:19px 24px; font-size:19px;
-  background:var(--accent); color:#fff; box-shadow:0 8px 24px rgba(49,130,246,.4);
+.btn:focus-visible{outline:2px solid var(--focus); outline-offset:2px}
+.btn:active{transform:translateY(1px)}
+.btn-primary{
+  width:100%; padding:17px 20px; font-size:16px;
+  background:var(--ink); color:var(--paper); border-color:var(--ink);
 }
-.foot{margin-top:20px; font-size:12.5px; color:#7FA3B8; line-height:1.7}
+.btn-primary:hover,.btn-primary.is-hover{background:var(--ink-2); border-color:var(--ink-2)}
+.btn-primary[disabled]{opacity:.45; cursor:not-allowed}
+.go-wrap{margin-top:var(--s-8)}
+.go-note{
+  margin:var(--s-4) 0 0; font-size:11.5px; line-height:1.6; color:var(--ink-3);
+}
 
-/* ── 게임 중 표시 ──────────────────────────────────── */
+/* ══ 게임 중 계기판 ══════════════════════════════════════
+   가운데 큰 점수는 시선을 뺏는다. 왼쪽 위로 몰고 시선을 비운다. */
 #hud{
   position:fixed; z-index:2; left:0; right:0;
-  top:max(12px,env(safe-area-inset-top));
-  display:none; flex-direction:column; align-items:center;
-  padding:0 16px; pointer-events:none;
+  top:max(10px,env(safe-area-inset-top));
+  display:none; padding:0 18px; pointer-events:none;
 }
-#hud.on{display:flex}
-.hud-row{width:100%; display:flex; justify-content:space-between; align-items:center}
-.pill{
-  display:flex; align-items:center; gap:7px;
-  padding:7px 13px; border-radius:999px;
-  background:rgba(4,22,38,.55); border:1px solid rgba(255,255,255,.16);
-  backdrop-filter:blur(8px); font-size:14px; font-weight:700;
+#hud.on{display:block}
+.gauge{
+  display:flex; align-items:flex-end; justify-content:space-between; gap:var(--s-4);
+  padding-bottom:7px; border-bottom:1px solid color-mix(in oklab, var(--rule-2) 70%, transparent);
 }
-#tempDot{width:9px; height:9px; border-radius:50%; background:var(--accent);
-  transition:background .4s linear}
-#tempVal{min-width:50px}
-#timeVal{min-width:44px; text-align:right}
-
-.scoreline{
-  margin-top:10px; display:flex; align-items:baseline; gap:8px;
-  text-shadow:0 2px 12px rgba(0,0,0,.45);
+.gauge-l{display:flex; align-items:baseline; gap:7px; min-width:0}
+#scoreLive{
+  font-family:var(--font-num); font-size:31px; font-weight:700; line-height:1;
+  letter-spacing:-.045em; font-variant-numeric:tabular-nums;
+  text-shadow:0 1px 10px color-mix(in oklab, var(--paper) 80%, transparent);
 }
-#scoreLive{font-size:38px; font-weight:800; letter-spacing:-.03em; line-height:1}
 .mult{
-  font-size:15px; font-weight:800; color:var(--gold);
-  opacity:0; transition:opacity .3s ease;
+  font-family:var(--font-num); font-size:13px; font-weight:700;
+  color:var(--accent); opacity:0; transition:opacity var(--dur) var(--ease-out);
 }
 .mult.on{opacity:1}
-#stageName{
-  margin-top:5px; font-size:13.5px; font-weight:800; letter-spacing:.1em;
-  text-shadow:0 2px 10px rgba(0,0,0,.75);
+#timeVal{font-family:var(--font-num); font-size:13px; font-weight:600; color:var(--ink-2);
+  font-variant-numeric:tabular-nums}
+.gauge-b{
+  margin-top:7px; display:flex; align-items:center; gap:var(--s-2);
+  font-size:11.5px; font-weight:600; color:var(--ink-2);
 }
+#tempDot{width:12px; height:2px; border-radius:1px; background:var(--st-0);
+  transition:background 500ms linear}
+#tempVal{font-family:var(--font-num); font-variant-numeric:tabular-nums; letter-spacing:-.01em}
+#stageName{letter-spacing:.02em; color:var(--ink-3)}
 
-/* 단계가 바뀔 때 한 번 크게 뜨는 알림 */
+/* 단계 전환 알림 — 알약 대신 규칙선 위의 한 줄 */
 #stageBanner{
-  position:fixed; z-index:2; left:0; right:0; top:38%;
-  text-align:center; pointer-events:none; opacity:0;
+  position:fixed; z-index:2; left:0; right:0; top:34%;
+  padding:0 22px; pointer-events:none; opacity:0;
 }
-#stageBanner.show{animation:banner 1.7s ease forwards}
-#stageBanner b{
-  display:inline-block; padding:10px 26px; border-radius:999px;
-  font-size:26px; font-weight:800; letter-spacing:.02em;
-  background:rgba(4,22,38,.72); border:1.5px solid currentColor;
-  text-shadow:0 2px 14px rgba(0,0,0,.6);
-}
-#stageBanner small{display:block; margin-top:10px; font-size:13.5px; font-weight:700;
-  color:rgba(255,255,255,.8); text-shadow:0 2px 10px rgba(0,0,0,.7)}
+#stageBanner.show{animation:banner 1.6s var(--ease-out) forwards}
+.bn-in{max-width:400px; margin:0 auto; border-top:1.5px solid currentColor;
+  border-bottom:1.5px solid currentColor; padding:11px 0}
+#stageBanner b{display:block; font-size:23px; font-weight:800; letter-spacing:-.02em}
+#stageBanner small{display:block; margin-top:3px; font-family:var(--font-num);
+  font-size:11.5px; font-weight:600; color:var(--ink-2)}
 @keyframes banner{
-  0%{opacity:0; transform:translateY(14px) scale(.94)}
-  16%{opacity:1; transform:translateY(0) scale(1)}
-  74%{opacity:1; transform:translateY(0) scale(1)}
-  100%{opacity:0; transform:translateY(-10px) scale(1)}
+  0%{opacity:0} 14%{opacity:1} 76%{opacity:1} 100%{opacity:0}
 }
 
-/* ── 결과 화면 ─────────────────────────────────────── */
-#over{
-  justify-content:flex-start; align-items:center;
-  background:linear-gradient(180deg, rgba(4,22,38,.74), rgba(4,22,38,.96));
+/* ══ 결과 화면 ═══════════════════════════════════════════ */
+#over{background:linear-gradient(180deg,
+  color-mix(in oklab, var(--paper) 82%, transparent),
+  var(--paper) 34%)}
+
+.res-score{display:flex; align-items:baseline; gap:5px; margin-bottom:var(--s-4)}
+#scoreVal{
+  font-family:var(--font-num); font-size:clamp(52px,17vw,66px); font-weight:700;
+  line-height:.9; letter-spacing:-.055em; font-variant-numeric:tabular-nums;
 }
-.sheet{width:100%; max-width:380px; margin:auto 0; display:flex; flex-direction:column}
-.record{padding:2px 0 0; text-align:center}
-.score{font-size:52px; font-weight:800; line-height:1; letter-spacing:-.045em}
-.score span{font-size:21px; font-weight:700; margin-left:3px; color:#9FC6DA}
-.rank{
-  margin-top:10px; display:inline-block; padding:6px 18px; border-radius:999px;
-  font-size:16px; font-weight:800; letter-spacing:-.01em;
-  background:rgba(255,201,74,.16); color:var(--gold); border:1px solid rgba(255,201,74,.42);
+.res-score .unit{font-size:19px; font-weight:600; color:var(--ink-3)}
+
+.res-rank{display:flex; align-items:baseline; gap:var(--s-3); flex-wrap:wrap}
+#rankBadge{font-size:19px; font-weight:800; letter-spacing:-.02em; color:var(--accent)}
+#nextRank{font-size:12.5px; font-weight:600; color:var(--ink-3)}
+#nextRank b{color:var(--ink-2); font-weight:700}
+#metaLine{
+  margin-top:var(--s-4); padding-top:var(--s-3); border-top:1px solid var(--rule);
+  font-family:var(--font-num); font-size:12px; font-weight:500; color:var(--ink-3);
+  font-variant-numeric:tabular-nums;
 }
-.next{margin-top:8px; font-size:13px; font-weight:600; color:#8FB2C6}
-.next b{color:var(--gold); font-weight:800}
-.meta{margin-top:12px; font-size:12.5px; font-weight:600; color:#7FA3B8}
-.meta em{font-style:normal; color:#FFD08A; font-weight:800}
+#metaLine em{font-style:normal; color:var(--accent); font-weight:700}
 
-.fact{margin-top:11px; padding:14px 16px; background:var(--panel); color:var(--ink);
-  border-radius:var(--r); box-shadow:0 8px 28px rgba(0,0,0,.28)}
-.fact-h{display:flex; align-items:center; gap:7px; font-size:12px; font-weight:800;
-  letter-spacing:.04em; color:var(--accent); margin-bottom:9px}
-.fact-h::before{content:""; width:6px; height:6px; border-radius:50%; background:var(--accent)}
-.fact-b{font-size:14px; line-height:1.62; color:var(--ink2); font-weight:500}
-.fact-b b{color:var(--ink); font-weight:800}
-.fact-b em{font-style:normal; color:var(--warm); font-weight:800}
+.again-wrap{margin-top:var(--s-6)}
 
-.btn-again{margin-top:14px; width:100%; padding:16px; font-size:17.5px;
-  background:var(--accent); color:#fff; box-shadow:0 8px 24px rgba(49,130,246,.38)}
-
-/* 투표 유도 — 여기가 이 게임을 만든 이유다 */
+/* 투표 — 화면에서 단 하나의 채워진 면. 그래서 눈이 여기로 온다. */
 .vote{
-  margin-top:16px; padding:17px 18px 16px; border-radius:var(--r); text-align:center;
-  background:linear-gradient(165deg,#FFF4E0,#FFE7C4); color:#3A2A12;
-  box-shadow:0 8px 28px rgba(0,0,0,.26);
+  margin-top:var(--s-6); background:var(--signal); color:oklch(99% 0.01 27);
+  border-radius:var(--radius); padding:var(--s-5) var(--s-5) var(--s-4);
+  display:grid; grid-template-columns:minmax(0,auto) minmax(0,1fr);
+  gap:0 var(--s-4); align-items:center;
 }
-.vote-lead{font-size:14px; font-weight:700; color:#8A6320}
-.booth{margin:8px 0 4px; font-size:48px; font-weight:800; line-height:1; color:#C2410C}
-.team{font-size:20px; font-weight:800; color:#7C3A0B; letter-spacing:-.02em}
-.subject{margin-top:9px; padding-top:9px; border-top:1px solid rgba(122,58,11,.2);
-  font-size:13px; line-height:1.6; color:#7A5A2A; font-weight:600}
-.credit{margin-top:14px; font-size:11px; color:#6E90A6; text-align:center; line-height:1.7}
+.vote-no{
+  grid-row:1/3; font-family:var(--font-num); font-size:44px; font-weight:700;
+  line-height:.86; letter-spacing:-.05em;
+}
+.vote-team{font-size:16px; font-weight:800; letter-spacing:-.02em}
+.vote-ask{font-size:12.5px; font-weight:600; opacity:.82; margin-top:2px}
+.vote-sub{
+  grid-column:1/3; margin-top:var(--s-4); padding-top:var(--s-3);
+  border-top:1px solid color-mix(in oklab, currentColor 26%, transparent);
+  font-size:11.5px; line-height:1.5; font-weight:500; opacity:.86;
+}
+.credit{margin-top:var(--s-5); font-size:10.5px; color:var(--ink-3); line-height:1.7}
 
-/* 화면이 짧은 폰(아이폰 SE 등)에서도 투표 블록이 한 화면에 들어오게 조인다 */
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms !important; transition-duration:120ms !important}
+  #stageBanner.show{animation:banner-rm 1.6s linear forwards}
+  @keyframes banner-rm{0%{opacity:0}10%{opacity:1}80%{opacity:1}100%{opacity:0}}
+}
+
+/* 화면이 짧은 폰에서도 투표 블록이 한 화면에 들어오게 */
 @media (max-height:730px){
-  .score{font-size:38px}
-  .score span{font-size:16px}
-  .rank{margin-top:8px; font-size:14px; padding:4px 14px}
-  .next{margin-top:5px; font-size:11.5px}
-  .meta{margin-top:9px; font-size:11.5px}
-  .fact{margin-top:10px; padding:11px 13px}
-  .fact-h{margin-bottom:6px; font-size:11px}
-  .fact-b{font-size:12.5px; line-height:1.5}
-  .btn-again{margin-top:9px; padding:13px; font-size:16px}
-  .vote{margin-top:10px; padding:13px 15px 12px}
-  .vote-lead{font-size:12.5px}
-  .booth{font-size:38px; margin:5px 0 3px}
-  .team{font-size:17px}
-  .subject{font-size:11.5px; margin-top:6px; padding-top:6px}
-  .credit{margin-top:9px; font-size:10px}
+  h1{font-size:clamp(38px,12vw,48px)}
+  .lede{margin-top:var(--s-4); font-size:14.5px}
+  .spec{margin-top:var(--s-6)}
+  .spec-row{padding:9px 0}
+  .go-wrap{margin-top:var(--s-5)}
+  #scoreVal{font-size:clamp(42px,14vw,52px)}
+  .again-wrap{margin-top:var(--s-4)}
+  .vote{margin-top:var(--s-4); padding:var(--s-4)}
+  .vote-no{font-size:38px}
 }
 </style>
 
 <canvas id="cv"></canvas>
 
+<!-- 게임 중 계기판 -->
 <div id="hud">
-  <div class="hud-row">
-    <div class="pill"><i id="tempDot"></i><span id="tempVal" class="tnum">21.0℃</span></div>
-    <div class="pill"><span id="timeVal" class="tnum">0.0초</span></div>
+  <div class="gauge">
+    <div class="gauge-l">
+      <span id="scoreLive">0</span>
+      <span class="mult" id="multBadge">×1.0</span>
+    </div>
+    <span id="timeVal">0.0초</span>
   </div>
-  <div class="scoreline">
-    <span id="scoreLive" class="tnum">0</span>
-    <span class="mult tnum" id="multBadge">×1.0</span>
+  <div class="gauge-b">
+    <i id="tempDot"></i><span id="tempVal">21.0℃</span><span id="stageName">평년</span>
   </div>
-  <div id="stageName">평년</div>
 </div>
 
-<div id="stageBanner"><b></b><small></small></div>
+<div id="stageBanner"><div class="bn-in"><b></b><small></small></div></div>
 
-<!-- 1. 시작 -->
+<!-- 시작 -->
 <div class="scr on" id="start">
-  <div class="badge">부스 <b>B02</b> · 젤리피쉬</div>
-  <h1>해파리 피하기</h1>
-  <p class="tagline">수온이 오를수록 해파리가 늘어납니다</p>
-  <div class="howto">
-    <div><i>👆</i><span>화면을 <b>누른 채 움직이면</b> 물고기가 헤엄쳐 따라옵니다</span></div>
-    <div><i>🪼</i><span>해파리에 닿으면 <b>끝</b></span></div>
-    <div><i class="g">✦</i><span><b class="g">관측 부표</b>를 먹으면 점수. 부표는 <b>해파리 옆에</b> 뜹니다</span></div>
-    <div><i>🌡</i><span>수온이 오르면 <b>점수 배수</b>도 올라갑니다</span></div>
+  <div class="wrap">
+    <div class="head">
+      <span class="mark num">B02</span><span class="who">젤리피쉬</span>
+    </div>
+
+    <h1>해파리<span class="l2">피하기</span></h1>
+    <p class="lede">동해 수온이 오를수록 해파리가 늘어납니다. 얼마나 버틸 수 있습니까.</p>
+
+    <dl class="spec">
+      <div class="spec-row"><dt>조작</dt><dd>누른 채 움직이면 물고기가 따라옵니다</dd></div>
+      <div class="spec-row"><dt>해파리</dt><dd>닿으면 그 판은 끝납니다</dd></div>
+      <div class="spec-row"><dt>관측 부표</dt><dd><b>해파리 옆에</b> 뜹니다. 먹으면 점수입니다</dd></div>
+      <div class="spec-row"><dt>수온</dt><dd>오를수록 해파리도, <b>점수 배수</b>도 커집니다</dd></div>
+    </dl>
+
+    <div class="go-wrap">
+      <button class="btn btn-primary" id="goBtn">시작</button>
+      <p class="go-note">제9회 Ocean ICT Festival<br>해양열파로 동해안 해파리 대량 발생 위험을 예측</p>
+    </div>
   </div>
-  <button class="btn btn-go" id="goBtn">시작하기</button>
-  <p class="foot">제9회 Ocean ICT Festival<br>해양열파로 동해안 해파리 대량 발생 위험을 예측</p>
 </div>
 
-<!-- 3. 결과 -->
+<!-- 결과 -->
 <div class="scr" id="over">
-  <div class="sheet">
-    <div class="record">
-      <div class="score tnum" id="scoreVal">0<span>점</span></div>
-      <div><span class="rank" id="rankBadge">해수욕객</span></div>
-      <div class="next tnum" id="nextRank"></div>
-      <div class="meta tnum" id="metaLine"></div>
+  <div class="wrap">
+    <div class="res-score">
+      <span id="scoreVal">0</span><span class="unit">점</span>
     </div>
-
-    <div class="fact">
-      <div class="fact-h">알고 가세요</div>
-      <div class="fact-b" id="factBody"></div>
+    <div class="res-rank">
+      <span id="rankBadge">해수욕객</span>
+      <span id="nextRank"></span>
     </div>
+    <p id="metaLine"></p>
 
-    <button class="btn btn-again" id="againBtn">다시하기</button>
+    <div class="again-wrap">
+      <button class="btn btn-primary" id="againBtn">다시하기</button>
+    </div>
 
     <div class="vote">
-      <div class="vote-lead">재밌으셨다면 투표 부탁드려요</div>
-      <div class="booth">B02</div>
-      <div class="team">젤리피쉬</div>
-      <div class="subject">해양열파로 동해안 해파리<br>대량 발생 위험을 예측</div>
+      <span class="vote-no num">B02</span>
+      <span class="vote-team">젤리피쉬</span>
+      <span class="vote-ask">재밌으셨다면 투표 부탁드립니다</span>
+      <span class="vote-sub">해양열파로 동해안 해파리 대량 발생 위험을 예측 · 부산과학고</span>
     </div>
 
-    <p class="credit">부산과학고 · 김민아 · 강태영 · 장도건 · 황은성</p>
+    <p class="credit">김민아 · 강태영 · 장도건 · 황은성</p>
   </div>
 </div>
-
 <script>
 "use strict";
 /* ────────────────────────────────────────────────────────────────
@@ -288,13 +356,13 @@ const CFG = {
 
 /* 수온 구간 = 게임의 단계. 이름·색·배수·붉은 기운이 함께 바뀐다. */
 const STAGES = [
-  { upto:23.0, name:'평년',          color:'#5FC7F0', mult:1.0, veil:0.00,
+  { upto:23.0, name:'평년',          color:'#7FC4DC', mult:1.0, veil:0.00,
     note:'해파리가 드문 구간입니다' },
-  { upto:25.0, name:'주의',          color:'#FFB020', mult:1.3, veil:0.07,
+  { upto:25.0, name:'주의',          color:'#F2B33C', mult:1.3, veil:0.06,
     note:'부표 점수 ×1.3' },
-  { upto:27.0, name:'해양열파',      color:'#FF6B6B', mult:1.7, veil:0.16,
+  { upto:27.0, name:'해양열파',      color:'#E8743F', mult:1.7, veil:0.14,
     note:'부표 점수 ×1.7' },
-  { upto:99.0, name:'대량 발생 경보', color:'#FF3B4E', mult:2.2, veil:0.26,
+  { upto:99.0, name:'대량 발생 경보', color:'#DE4331', mult:2.2, veil:0.22,
     note:'부표 점수 ×2.2' }
 ];
 
@@ -310,29 +378,20 @@ const RANKS = [
   { min:0,    name:'해파리 밥' }
 ];
 
-/* 결과창 「알고 가세요」 — 전부 docs/핵심수치.md 의 실측값이다.
-   게임 규칙은 은유지만 이 숫자는 과장하지 않는다. */
-const FACTS = [
-  '모델이 <b>"위험"</b>이라 한 주는 실제 발생률 <b>50.7%</b>, 아니라 한 주는 ' +
-  '<b>37.9%</b>. <em>1.34배</em>가 수온을 봐서 번 몫입니다.',
 
-  '매주 <b>상위 10곳</b>을 찍으면 <b>34.7%</b>가 실제로 맞습니다. ' +
-  '아무렇게나 찍을 때의 <em>27배</em>.',
-
-  '<b>7~9월 적중률 52.9%</b>, <b>10~12월 9.2%</b>. ' +
-  '<em>못 맞히는 계절도 그대로 적었습니다.</em>',
-
-  '원자료 36,455건 중 <b>2,981건</b>이 위경도가 뒤바뀌어 ' +
-  '<em>육지에 찍혀</em> 있었습니다.',
-
-  '"열파 → 폴립 → 이듬해 해파리" 우리 가설은 3중 검정에서 ' +
-  '<em>3전 3패로 기각</em>됐습니다. 안 되는 것도 결과입니다.',
-
-  '폴립을 찾으려 채집 <b>32만 건</b>을 전수 검색했지만 ' +
-  '진정해파리강은 <em>0건</em>이었습니다.',
-
-  '이 모델은 매주 목요일 전국을 도는 <b>정기조사 189일</b>치로 만들었습니다.'
-];
+/* 캔버스 팔레트 — CSS 토큰과 같은 값을 쓴다. 화면 안에서 색이 갈리면
+   게임만 따로 노는 물건처럼 보인다. */
+const PAL = {
+  sea : ['#2F6E88', '#1B5069', '#0E3247', '#071A26'],
+  ray : 'rgba(214,236,246,',
+  bub : 'rgba(206,228,240,.20)',
+  veil: 'rgba(158,48,40,',
+  fish: { body:'#F0A63A', tail:'#DC8C22', sheen:'rgba(255,246,230,.5)', eye:'#12242E',
+          glow:'rgba(240,166,58,.5)' },
+  buoy: { core:'#FFF6E2', ring:'#F2B33C', glow:'rgba(242,179,60,.8)', spark:'rgba(255,240,206,' },
+  jelA: ['rgba(250,232,242,.94)','rgba(226,158,192,.7)','rgba(178,96,142,.14)','rgba(240,190,216,.55)'],
+  jelB: ['rgba(228,242,250,.94)','rgba(140,190,222,.7)','rgba(78,138,186,.14)','rgba(166,206,234,.55)']
+};
 
 // ── 캔버스 ────────────────────────────────────────────────────
 const cv = document.getElementById('cv');
@@ -423,15 +482,10 @@ function drawJelly(j){
   ctx.translate(j.x, j.y);
 
   const g = ctx.createRadialGradient(0, -r*0.25, r*0.1, 0, 0, r*1.15);
-  if (j.hue === 0){
-    g.addColorStop(0,   'rgba(255,235,247,.95)');
-    g.addColorStop(0.55,'rgba(247,168,205,.72)');
-    g.addColorStop(1,   'rgba(214,110,170,.15)');
-  } else {
-    g.addColorStop(0,   'rgba(232,246,255,.95)');
-    g.addColorStop(0.55,'rgba(150,205,240,.72)');
-    g.addColorStop(1,   'rgba(96,160,215,.15)');
-  }
+  const jp = j.hue === 0 ? PAL.jelA : PAL.jelB;
+  g.addColorStop(0,    jp[0]);
+  g.addColorStop(0.55, jp[1]);
+  g.addColorStop(1,    jp[2]);
   ctx.fillStyle = g;
   ctx.beginPath();
   ctx.ellipse(0, 0, r, r * 0.86, 0, Math.PI, Math.PI * 2);
@@ -439,7 +493,7 @@ function drawJelly(j){
   ctx.quadraticCurveTo(-r * 0.55, r * 0.5, -r, 0);
   ctx.fill();
 
-  ctx.strokeStyle = j.hue === 0 ? 'rgba(250,190,220,.6)' : 'rgba(175,215,245,.6)';
+  ctx.strokeStyle = jp[3];
   ctx.lineWidth = Math.max(1.2, r * 0.075);
   ctx.lineCap = 'round';
   for (let i = -2; i <= 2; i++){
@@ -454,6 +508,11 @@ function drawJelly(j){
 }
 
 // ── 관측 부표 ─────────────────────────────────────────────────
+function farFromOtherBuoys(x, y){
+  for (const b of buoys) if (Math.hypot(b.x - x, b.y - y) < 86) return false;
+  return true;
+}
+
 function spawnBuoy(){
   let x, y, sp;
   if (jellies.length){
@@ -471,12 +530,10 @@ function spawnBuoy(){
     y = -30;
     sp = 0.24 * H;
   }
-  buoys.push({
-    x : Math.min(Math.max(x, 34), W - 34),
-    y : Math.min(Math.max(y, -40), H * 0.5),
-    sp: sp,
-    ph: Math.random() * 6.28
-  });
+  x = Math.min(Math.max(x, 34), W - 34);
+  y = Math.min(Math.max(y, -40), H * 0.5);
+  if (!farFromOtherBuoys(x, y)) return;   // 뭉치면 이번 차례는 거른다
+  buoys.push({ x: x, y: y, sp: sp, ph: Math.random() * 6.28 });
 }
 
 function drawBuoy(b){
@@ -485,17 +542,17 @@ function drawBuoy(b){
   ctx.save();
   ctx.translate(b.x, b.y);
 
-  ctx.shadowColor = 'rgba(255,201,74,.85)';
+  ctx.shadowColor = PAL.buoy.glow;
   ctx.shadowBlur = 18;
-  ctx.fillStyle = '#FFC94A';
+  ctx.fillStyle = PAL.buoy.ring;
   ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
 
   ctx.shadowBlur = 0;
-  ctx.fillStyle = 'rgba(255,255,255,.92)';
+  ctx.fillStyle = PAL.buoy.core;
   ctx.beginPath(); ctx.arc(0, 0, r * 0.42, 0, Math.PI * 2); ctx.fill();
 
   // 네 갈래 반짝임
-  ctx.strokeStyle = 'rgba(255,240,200,' + (0.5 + 0.3 * Math.sin(t * 5 + b.ph)) + ')';
+  ctx.strokeStyle = PAL.buoy.spark + (0.5 + 0.3 * Math.sin(t * 5 + b.ph)).toFixed(2) + ')';
   ctx.lineWidth = 2; ctx.lineCap = 'round';
   for (let i = 0; i < 4; i++){
     const a = i * Math.PI / 2 + t * 0.8;
@@ -516,21 +573,21 @@ function drawFish(){
   ctx.rotate(ang * dir);
   ctx.scale(dir, 1);
 
-  ctx.shadowColor = 'rgba(255,150,40,.55)';
+  ctx.shadowColor = PAL.fish.glow;
   ctx.shadowBlur = 16;
-  ctx.fillStyle = '#FF9F2E';
+  ctx.fillStyle = PAL.fish.tail;
   ctx.beginPath();                       // 꼬리
   ctx.moveTo(-11, 0); ctx.lineTo(-21, -8.5); ctx.lineTo(-18, 0); ctx.lineTo(-21, 8.5);
   ctx.closePath(); ctx.fill();
 
-  ctx.fillStyle = '#FFB63E';
+  ctx.fillStyle = PAL.fish.body;
   ctx.beginPath(); ctx.ellipse(0, 0, 15, 10, 0, 0, Math.PI * 2); ctx.fill();
 
   ctx.shadowBlur = 0;
-  ctx.fillStyle = 'rgba(255,255,255,.55)';
+  ctx.fillStyle = PAL.fish.sheen;
   ctx.beginPath(); ctx.ellipse(-1, -3.5, 9, 3.6, 0, 0, Math.PI * 2); ctx.fill();
 
-  ctx.fillStyle = '#25313D';
+  ctx.fillStyle = PAL.fish.eye;
   ctx.beginPath(); ctx.arc(7, -2, 2.3, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 }
@@ -546,31 +603,32 @@ function makeBubbles(){
 
 function drawBackground(dt){
   const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0,   '#8FD4EA');
-  g.addColorStop(0.3, '#3E92BC');
-  g.addColorStop(0.7, '#12527E');
-  g.addColorStop(1,   '#06243B');
+  g.addColorStop(0,    PAL.sea[0]);
+  g.addColorStop(0.34, PAL.sea[1]);
+  g.addColorStop(0.7,  PAL.sea[2]);
+  g.addColorStop(1,    PAL.sea[3]);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
 
   if (!lowSpec){                              // 수면에서 내려오는 빛줄기
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    for (let i = 0; i < 3; i++){
-      const x = W * (0.2 + i * 0.3) + Math.sin(t * 0.25 + i) * W * 0.06;
+    for (let i = 0; i < 2; i++){
+      const x = W * (0.26 + i * 0.47) + Math.sin(t * 0.22 + i * 2.1) * W * 0.05;
       const lg = ctx.createLinearGradient(x, 0, x, H * 0.8);
-      lg.addColorStop(0, 'rgba(255,255,255,.16)');
-      lg.addColorStop(1, 'rgba(255,255,255,0)');
+      lg.addColorStop(0,   PAL.ray + '.055)');
+      lg.addColorStop(0.5, PAL.ray + '.022)');
+      lg.addColorStop(1,   PAL.ray + '0)');
       ctx.fillStyle = lg;
       ctx.beginPath();
-      ctx.moveTo(x - 22, 0); ctx.lineTo(x + 22, 0);
-      ctx.lineTo(x + 78, H * 0.8); ctx.lineTo(x + 14, H * 0.8);
+      ctx.moveTo(x - 34, 0); ctx.lineTo(x + 34, 0);
+      ctx.lineTo(x + 118, H * 0.86); ctx.lineTo(x + 16, H * 0.86);
       ctx.closePath(); ctx.fill();
     }
     ctx.restore();
   }
 
-  ctx.fillStyle = 'rgba(255,255,255,.24)';    // 물방울
+  ctx.fillStyle = PAL.bub;                    // 물방울
   for (const b of bubbles){
     b.y -= b.sp * dt;
     if (b.y < -6){ b.y = H + 6; b.x = Math.random() * W; }
@@ -583,7 +641,7 @@ function drawBackground(dt){
   const want = STAGES[stage].veil;
   veil += (want - veil) * Math.min(1, dt * 1.4);
   if (veil > 0.004){
-    ctx.fillStyle = 'rgba(190,40,50,' + veil.toFixed(3) + ')';
+    ctx.fillStyle = PAL.veil + veil.toFixed(3) + ')';
     ctx.fillRect(0, 0, W, H);
   }
 }
@@ -598,12 +656,12 @@ function drawPops(dt){
     ctx.save();
     ctx.globalAlpha = Math.min(1, k * 1.6);
     ctx.translate(p.x, p.y - (1 - k) * 34);
-    ctx.font = '800 19px -apple-system,"Pretendard","Apple SD Gothic Neo",sans-serif';
+    ctx.font = '700 18px ui-monospace,"SF Mono",SFMono-Regular,"Roboto Mono",monospace';
     ctx.textAlign = 'center';
     ctx.lineWidth = 4;
-    ctx.strokeStyle = 'rgba(4,22,38,.75)';
+    ctx.strokeStyle = 'rgba(7,26,38,.8)';
     ctx.strokeText(p.txt, 0, 0);
-    ctx.fillStyle = '#FFD86B';
+    ctx.fillStyle = PAL.buoy.ring;
     ctx.fillText(p.txt, 0, 0);
     ctx.restore();
   }
@@ -708,13 +766,13 @@ function draw(dt){
   if (sparkle > 0){                     // 부표를 먹으면 금빛이 한 번 번진다
     sparkle = Math.max(0, sparkle - dt * 3.2);
     const rg = ctx.createRadialGradient(W/2, H/2, H*0.24, W/2, H/2, H*0.62);
-    rg.addColorStop(0, 'rgba(255,201,74,0)');
-    rg.addColorStop(1, 'rgba(255,201,74,' + (sparkle * 0.22).toFixed(3) + ')');
+    rg.addColorStop(0, 'rgba(242,179,60,0)');
+    rg.addColorStop(1, 'rgba(242,179,60,' + (sparkle * 0.20).toFixed(3) + ')');
     ctx.fillStyle = rg;
     ctx.fillRect(0, 0, W, H);
   }
   if (flash > 0){
-    ctx.fillStyle = 'rgba(255,120,150,' + (flash * 0.5).toFixed(3) + ')';
+    ctx.fillStyle = 'rgba(222,67,49,' + (flash * 0.42).toFixed(3) + ')';
     ctx.fillRect(0, 0, W, H);
     flash = Math.max(0, flash - dt * 2.6);
   }
@@ -735,8 +793,7 @@ const el = {
   scoreVal: document.getElementById('scoreVal'),
   rankBadge:document.getElementById('rankBadge'),
   nextRank: document.getElementById('nextRank'),
-  metaLine: document.getElementById('metaLine'),
-  factBody: document.getElementById('factBody')
+  metaLine: document.getElementById('metaLine')
 };
 
 function announceStage(){
@@ -749,7 +806,6 @@ function announceStage(){
   void el.banner.offsetWidth;                    // 애니메이션을 처음부터 다시
   el.banner.classList.add('show');
   el.stageName.textContent = s.name;
-  el.stageName.style.color = s.color;
 }
 
 let hudTick = 0;
@@ -779,7 +835,6 @@ function startGame(){
   fish.y = fish.ty = H * 0.72;
   fish.vx = fish.vy = 0;
   el.stageName.textContent = STAGES[0].name;
-  el.stageName.style.color = STAGES[0].color;
   el.multBadge.classList.remove('on');
   el.banner.classList.remove('show');
   el.start.classList.remove('on');
@@ -808,7 +863,7 @@ function showResult(){
     try { localStorage.setItem('b02_best_score', String(best)); } catch(e){}
   }
 
-  el.scoreVal.innerHTML = final.toLocaleString('ko-KR') + '<span>점</span>';
+  el.scoreVal.textContent = final.toLocaleString('ko-KR');
   el.rankBadge.textContent = rankOf(final);
   const up = RANKS.filter(r => r.min > final).sort((a,b) => a.min - b.min)[0];
   el.nextRank.innerHTML = up
@@ -817,15 +872,8 @@ function showResult(){
   // 부차적인 숫자는 전부 한 줄에 넣는다. 30초 게임 뒤에 읽을 것이 열 개면
   // 아무것도 안 읽힌다.
   el.metaLine.innerHTML = '관측 ' + obs + '개 · ' + t.toFixed(1) + '초 · ' +
-    (isNew ? '<em>🎉 최고 기록!</em>'
-           : '내 최고 ' + best.toLocaleString('ko-KR') + '점');
-
-  // 매 판 다른 숫자를 보여줘야 여러 판 한 사람이 여러 개를 들고 간다
-  let idx = 0;
-  try { idx = (parseInt(localStorage.getItem('b02_fact') || '-1', 10) + 1) % FACTS.length; } catch(e){}
-  if (!(idx >= 0 && idx < FACTS.length)) idx = 0;
-  try { localStorage.setItem('b02_fact', String(idx)); } catch(e){}
-  el.factBody.innerHTML = FACTS[idx];
+    (isNew ? '<em>최고 기록</em>'
+           : '최고 ' + best.toLocaleString('ko-KR') + '점');
 
   el.over.scrollTop = 0;
   el.over.classList.add('on');
